@@ -106,6 +106,11 @@ class _CartPageState extends State<CartPage> {
                               ),
                             ),
 
+                            Text(
+                              "Size: $size",
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+
                             const SizedBox(height: 8),
 
                             // QTY CONTROL
