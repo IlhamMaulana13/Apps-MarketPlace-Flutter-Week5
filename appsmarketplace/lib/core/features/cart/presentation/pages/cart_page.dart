@@ -43,3 +43,14 @@ class _CartPageState extends State<CartPage> {
         body: Center(child: Text("Keranjang kosong")),
       );
     }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text("Keranjang")),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: cart.items.length,
+              itemBuilder: (context, i) {
+                final item = cart.items[i];
+                final product = item['product'];
