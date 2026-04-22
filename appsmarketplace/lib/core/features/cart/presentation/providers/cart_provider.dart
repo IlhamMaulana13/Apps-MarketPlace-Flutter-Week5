@@ -6,15 +6,14 @@ class CartProvider extends ChangeNotifier {
   double totalPrice = 0;
   bool isLoading = false;
 
-Future<void> fetchCart() async {
+  Future<void> fetchCart() async {
     isLoading = true;
     notifyListeners();
 
     final res = await DioClient.instance.get('/cart');
 
     items = res.data['data']['items'] ?? [];
-    totalPrice =
-        (res.data['data']['total_price'] as num?)?.toDouble() ?? 0;
+    totalPrice = (res.data['data']['total_price'] as num?)?.toDouble() ?? 0;
 
     isLoading = false;
     notifyListeners();
@@ -23,25 +22,16 @@ Future<void> fetchCart() async {
   Future<void> addToCart(int productId, {String? size}) async {
     await DioClient.instance.post(
       '/cart',
-      data: {
-        "product_id": productId,
-        "quantity": 1,
-        "size": size ?? "M",
-      },
+      data: {"product_id": productId, "quantity": 1, "size": size ?? "M"},
     );
 
     await fetchCart(); // 🔥 refresh
   }
 
-Future<void> updateQty(int id, int qty) async {
+  Future<void> updateQty(int id, int qty) async {
     if (qty <= 0) return;
 
-    await DioClient.instance.put(
-      '/cart/$id',
-      data: {
-        "quantity": qty,
-      },
-    );
+    await DioClient.instance.put('/cart/$id', data: {"quantity": qty});
 
     await fetchCart();
   }
@@ -54,8 +44,12 @@ Future<void> updateQty(int id, int qty) async {
   Future<void> checkout() async {
     await DioClient.instance.post(
       '/orders/checkout',
-      data: {
-        "shipping_address": "Jl. Default",
-        "notes": "-",
-      },
+      data: {"shipping_address": "Jl. Default", "notes": "-"},
     );
+
+    items = [];
+    totalPrice = 0;
+
+    notifyListeners();
+  }
+}
