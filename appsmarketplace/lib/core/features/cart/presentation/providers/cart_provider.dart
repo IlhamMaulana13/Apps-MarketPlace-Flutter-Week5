@@ -19,3 +19,16 @@ Future<void> fetchCart() async {
     isLoading = false;
     notifyListeners();
   }
+
+  Future<void> addToCart(int productId, {String? size}) async {
+    await DioClient.instance.post(
+      '/cart',
+      data: {
+        "product_id": productId,
+        "quantity": 1,
+        "size": size ?? "M",
+      },
+    );
+
+    await fetchCart(); // 🔥 refresh
+  }
