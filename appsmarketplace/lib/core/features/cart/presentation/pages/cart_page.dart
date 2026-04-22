@@ -82,3 +82,6 @@ class _CartPageState extends State<CartPage> {
                           fit: BoxFit.cover,
                         ),
                       ),
+
+const SizedBox(width: 12),
+
