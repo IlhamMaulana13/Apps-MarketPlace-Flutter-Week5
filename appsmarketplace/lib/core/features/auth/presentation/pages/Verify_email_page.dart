@@ -31,7 +31,10 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
   }
 
   // Logika Polling untuk mengecek status verifikasi tanpa mengubah UI
-  
+  void _startPolling() {
+  _timer = Timer.periodic(const Duration(seconds: 3), (_) async {
+    final auth = context.read<AuthProvider>();
+
 
   Future<void> _resendEmail() async {
     if (_resendCooldown) return;
