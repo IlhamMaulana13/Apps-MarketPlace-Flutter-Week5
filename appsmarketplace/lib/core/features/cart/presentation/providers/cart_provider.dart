@@ -50,3 +50,12 @@ Future<void> updateQty(int id, int qty) async {
     await DioClient.instance.delete('/cart/$id');
     await fetchCart();
   }
+
+  Future<void> checkout() async {
+    await DioClient.instance.post(
+      '/orders/checkout',
+      data: {
+        "shipping_address": "Jl. Default",
+        "notes": "-",
+      },
+    );
