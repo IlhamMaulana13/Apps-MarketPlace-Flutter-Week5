@@ -32,3 +32,16 @@ Future<void> fetchCart() async {
 
     await fetchCart(); // 🔥 refresh
   }
+
+Future<void> updateQty(int id, int qty) async {
+    if (qty <= 0) return;
+
+    await DioClient.instance.put(
+      '/cart/$id',
+      data: {
+        "quantity": qty,
+      },
+    );
+
+    await fetchCart();
+  }
