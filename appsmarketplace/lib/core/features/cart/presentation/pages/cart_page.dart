@@ -101,3 +101,10 @@ const SizedBox(width: 12),
 
 const SizedBox(height: 4),
 
+Text(
+                              "Rp ${formatPrice(product['price'])}",
+                              style: const TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
