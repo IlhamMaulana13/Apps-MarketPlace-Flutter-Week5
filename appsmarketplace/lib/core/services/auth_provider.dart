@@ -37,33 +37,42 @@ class AuthProvider extends ChangeNotifier {
 
   // ================= LOGIN EMAIL =================
   Future<bool> loginWithEmail({
-  required String email,
-  required String password,
+    required String email,
+    required String password,
   }) async {
-  _setLoading();
-  try {
-    final credential = await _auth.signInWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
+    _setLoading();
+    try {
+      final credential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-     _firebaseUser = credential.user;
+      _firebaseUser = credential.user;
 
-     await _firebaseUser!.reload();
+      await _firebaseUser!.reload();
 
-     if (!(_firebaseUser?.emailVerified ?? false)) {
-      await _auth.signOut(); // 🔥 penting
+      if (!(_firebaseUser?.emailVerified ?? false)) {
+        await _auth.signOut(); // 🔥 penting
 
-      _status = AuthStatus.emailNotVerified;
+        _status = AuthStatus.emailNotVerified;
+        notifyListeners();
+        return false;
+      }
+
+      final isVerified = await _verifyTokenToBackend();
+      if (!isVerified) {
+        _setError("Gagal verifikasi ke backend");
+        return false;
+      }
+
+      _status = AuthStatus.authenticated;
       notifyListeners();
+      return true;
+    } on FirebaseAuthException catch (e) {
+      _setError(e.message ?? 'Login gagal');
       return false;
     }
-
-    final isVerified = await _verifyTokenToBackend();
-    if (!isVerified) {
-      _setError("Gagal verifikasi ke backend");
-      return false;
-    }
+  }
 
   // ================= LOGIN GOOGLE =================
   Future<bool> loginWithGoogle() async {
