@@ -185,4 +185,26 @@ IconButton(
 
                 const SizedBox(height: 12),
 
-                
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      await context.read<CartProvider>().checkout();
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Checkout berhasil"),
+                        ),
+                      );
+                    },
+                    child: const Text("Checkout"),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
