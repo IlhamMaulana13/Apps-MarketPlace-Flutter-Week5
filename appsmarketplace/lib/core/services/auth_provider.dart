@@ -49,6 +49,8 @@ class AuthProvider extends ChangeNotifier {
 
      _firebaseUser = credential.user;
 
+     await _firebaseUser!.reload();
+
   // ================= LOGIN GOOGLE =================
   Future<bool> loginWithGoogle() async {
     _setLoading();
