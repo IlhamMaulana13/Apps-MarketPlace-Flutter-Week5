@@ -45,3 +45,8 @@ Future<void> updateQty(int id, int qty) async {
 
     await fetchCart();
   }
+
+  Future<void> removeItem(int id) async {
+    await DioClient.instance.delete('/cart/$id');
+    await fetchCart();
+  }
