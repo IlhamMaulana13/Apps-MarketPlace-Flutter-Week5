@@ -33,15 +33,11 @@ class _CartPageState extends State<CartPage> {
     final cart = context.watch<CartProvider>();
 
     if (cart.isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (cart.items.isEmpty) {
-      return const Scaffold(
-        body: Center(child: Text("Keranjang kosong")),
-      );
+      return const Scaffold(body: Center(child: Text("Keranjang kosong")));
     }
 
     return Scaffold(
@@ -54,6 +50,7 @@ class _CartPageState extends State<CartPage> {
               itemBuilder: (context, i) {
                 final item = cart.items[i];
                 final product = item['product'];
+                final size = item['size'] ?? "-";
                 return Container(
                   margin: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -83,9 +80,9 @@ class _CartPageState extends State<CartPage> {
                         ),
                       ),
 
-const SizedBox(width: 12),
+                      const SizedBox(width: 12),
 
-// DETAIL
+                      // DETAIL
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,9 +96,9 @@ const SizedBox(width: 12),
                               ),
                             ),
 
-const SizedBox(height: 4),
+                            const SizedBox(height: 4),
 
-Text(
+                            Text(
                               "Rp ${formatPrice(product['price'])}",
                               style: const TextStyle(
                                 color: Colors.blue,
@@ -109,18 +106,18 @@ Text(
                               ),
                             ),
 
-const SizedBox(height: 8),
+                            const SizedBox(height: 8),
 
-// QTY CONTROL
+                            // QTY CONTROL
                             Row(
                               children: [
                                 IconButton(
                                   icon: const Icon(Icons.remove),
                                   onPressed: () {
                                     context.read<CartProvider>().updateQty(
-                                          item['ID'],
-                                          item['quantity'] - 1,
-                                        );
+                                      item['ID'],
+                                      item['quantity'] - 1,
+                                    );
                                   },
                                 ),
 
@@ -130,23 +127,23 @@ const SizedBox(height: 8),
                                   icon: const Icon(Icons.add),
                                   onPressed: () {
                                     context.read<CartProvider>().updateQty(
-                                          item['ID'],
-                                          item['quantity'] + 1,
-                                        );
+                                      item['ID'],
+                                      item['quantity'] + 1,
+                                    );
                                   },
                                 ),
 
                                 const Spacer(),
 
-IconButton(
+                                IconButton(
                                   icon: const Icon(
                                     Icons.delete,
                                     color: Colors.red,
                                   ),
                                   onPressed: () {
                                     context.read<CartProvider>().removeItem(
-                                          item['ID'],
-                                        );
+                                      item['ID'],
+                                    );
                                   },
                                 ),
                               ],
@@ -161,7 +158,7 @@ IconButton(
             ),
           ),
 
-           // TOTAL + CHECKOUT
+          // TOTAL + CHECKOUT
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
@@ -192,9 +189,7 @@ IconButton(
                       await context.read<CartProvider>().checkout();
 
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Checkout berhasil"),
-                        ),
+                        const SnackBar(content: Text("Checkout berhasil")),
                       );
                     },
                     child: const Text("Checkout"),
