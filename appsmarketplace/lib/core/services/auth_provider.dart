@@ -59,6 +59,12 @@ class AuthProvider extends ChangeNotifier {
       return false;
     }
 
+    final isVerified = await _verifyTokenToBackend();
+    if (!isVerified) {
+      _setError("Gagal verifikasi ke backend");
+      return false;
+    }
+
   // ================= LOGIN GOOGLE =================
   Future<bool> loginWithGoogle() async {
     _setLoading();
