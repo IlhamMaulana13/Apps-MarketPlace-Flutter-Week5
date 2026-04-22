@@ -18,3 +18,12 @@ class _CartPageState extends State<CartPage> {
           (m) => '${m[1]}.',
         );
   }
+
+  @override
+  void initState() {
+    super.initState();
+
+    Future.microtask(() {
+      context.read<CartProvider>().fetchCart();
+    });
+  }
