@@ -70,3 +70,15 @@ class _CartPageState extends State<CartPage> {
                       ),
                     ],
                   ),
+                  child: Row(
+                    children: [
+                      // IMAGE
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          product['image_url'],
+                          width: 70,
+                          height: 70,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
