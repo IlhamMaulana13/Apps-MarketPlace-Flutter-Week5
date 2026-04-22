@@ -34,7 +34,13 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
   void _startPolling() {
   _timer = Timer.periodic(const Duration(seconds: 3), (_) async {
     final auth = context.read<AuthProvider>();
+  await auth.firebaseUser?.reload();
 
+    // 🔥 WAJIB ambil ulang user dari Firebase
+    final refreshedUser = FirebaseAuth.instance.currentUser;
+
+    if (refreshedUser != null && refreshedUser.emailVerified) {
+      _timer?.cancel();
 
   Future<void> _resendEmail() async {
     if (_resendCooldown) return;
