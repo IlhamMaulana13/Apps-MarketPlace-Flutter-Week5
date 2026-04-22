@@ -1,15 +1,15 @@
-import 'package:appsmarketplace/core/routes/app_router.dart';
-import 'package:appsmarketplace/core/services/auth_provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:appsmarketplace/core/services/auth_provider.dart' as auth_provider;
+import 'package:appsmarketplace/core/routes/app_router.dart';
 import '../widgets/auth_header.dart';
 import '../widgets/custom_button.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class VerifyEmailPage extends StatefulWidget {
   const VerifyEmailPage({super.key});
+
   @override
   State<VerifyEmailPage> createState() => _VerifyEmailPageState();
 }
@@ -22,7 +22,6 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
   @override
   void initState() {
     super.initState();
-    // Memulai pengecekan otomatis setiap 3 detik
     _startPolling();
   }
 
@@ -32,29 +31,36 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
     super.dispose();
   }
 
-  // Logika Polling untuk mengecek status verifikasi tanpa mengubah UI
+  // ================= POLLING =================
   void _startPolling() {
-    _timer = Timer.periodic(const Duration(seconds: 3), (_) async {
-      final auth = context.read<AuthProvider>();
-
+    _timer = Timer.periodic(const Duration(seconds: 3), (timer) async {
       try {
-        // 🔥 ambil langsung dari Firebase (JANGAN dari provider)
         final user = FirebaseAuth.instance.currentUser;
 
-        if (user == null) return;
+        // ❗ kalau user null → stop biar gak error
+        if (user == null) {
+          timer.cancel();
+          return;
+        }
 
         await user.reload();
 
         final refreshedUser = FirebaseAuth.instance.currentUser;
 
         if (refreshedUser != null && refreshedUser.emailVerified) {
-          _timer?.cancel();
+          timer.cancel();
 
-          // 🔥 pakai provider untuk sync ke backend
+          final auth = context.read<AuthProvider>();
+
           final success = await auth.checkEmailVerified();
 
-          if (mounted && success) {
-            Navigator.pushReplacementNamed(context, AppRouter.dashboard);
+          if (!mounted) return;
+
+          if (success) {
+            Navigator.pushReplacementNamed(
+              context,
+              AppRouter.dashboard,
+            );
           }
         }
       } catch (e) {
@@ -63,11 +69,16 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
     });
   }
 
+  // ================= RESEND EMAIL =================
   Future<void> _resendEmail() async {
     if (_resendCooldown) return;
+
     try {
-      // Menggunakan fungsi kirim ulang dari provider
-      await context.read<AuthProvider>().firebaseUser?.sendEmailVerification();
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null) return;
+
+      await user.sendEmailVerification();
 
       setState(() {
         _resendCooldown = true;
@@ -79,9 +90,9 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
           t.cancel();
           return;
         }
-        setState(() {
-          _countdown--;
-        });
+
+        setState(() => _countdown--);
+
         if (_countdown <= 0) {
           t.cancel();
           setState(() => _resendCooldown = false);
@@ -89,18 +100,19 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email verifikasi sudah dikirim ulang')),
+        const SnackBar(content: Text('Email verifikasi dikirim ulang')),
       );
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Gagal mengirim email: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal kirim email: $e')),
+      );
     }
   }
 
+  // ================= UI =================
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AuthProvider>().firebaseUser;
+    final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
       body: SafeArea(
@@ -113,10 +125,12 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
                 icon: Icons.mark_email_unread_outlined,
                 title: 'Verifikasi Email Kamu',
                 subtitle:
-                    'Kami sudah mengirim link verifikasi ke email di bawah ini. Silakan klik link tersebut lalu tunggu sebentar.',
+                    'Klik link di email kamu. Halaman ini akan lanjut otomatis.',
                 iconColor: Colors.orange,
               ),
+
               const SizedBox(height: 24),
+
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -132,7 +146,9 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
                   ),
                 ),
               ),
+
               const SizedBox(height: 32),
+
               const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -142,10 +158,13 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                   SizedBox(width: 12),
-                  Text('Mengecek status verifikasi...'),
+                  Text('Menunggu verifikasi email...'),
                 ],
               ),
+
               const SizedBox(height: 32),
+
+              // 🔁 RESEND
               CustomButton(
                 label: _resendCooldown
                     ? 'Kirim Ulang ($_countdown s)'
@@ -153,16 +172,24 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
                 variant: ButtonVariant.outlined,
                 onPressed: _resendCooldown ? null : _resendEmail,
               ),
+
               const SizedBox(height: 16),
+
+              // 🚪 LOGOUT
               CustomButton(
                 label: 'Logout / Ganti Akun',
                 variant: ButtonVariant.text,
                 onPressed: () async {
                   _timer?.cancel();
+
                   await context.read<AuthProvider>().logout();
-                  if (mounted) {
-                    Navigator.pushReplacementNamed(context, AppRouter.login);
-                  }
+
+                  if (!mounted) return;
+
+                  Navigator.pushReplacementNamed(
+                    context,
+                    AppRouter.login,
+                  );
                 },
               ),
             ],
