@@ -35,6 +35,13 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  AuthProvider() {
+    _auth.authStateChanges().listen((user) {
+      _firebaseUser = user;
+      notifyListeners();
+    });
+  }
+
   // ================= LOGIN EMAIL =================
   Future<bool> loginWithEmail({
     required String email,
