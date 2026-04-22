@@ -41,6 +41,7 @@ class AuthProvider extends ChangeNotifier {
     required String password,
   }) async {
     _setLoading();
+
     try {
       final credential = await _auth.signInWithEmailAndPassword(
         email: email,
@@ -49,16 +50,18 @@ class AuthProvider extends ChangeNotifier {
 
       _firebaseUser = credential.user;
 
+      // 🔥 WAJIB reload biar status terbaru
       await _firebaseUser!.reload();
+      final user = _auth.currentUser;
 
-      if (!(_firebaseUser?.emailVerified ?? false)) {
-        await _auth.signOut(); // 🔥 penting
-
+      // ❌ BLOCK kalau belum verify
+      if (!(user?.emailVerified ?? false)) {
         _status = AuthStatus.emailNotVerified;
         notifyListeners();
         return false;
       }
 
+      // ✅ BARU kirim ke backend kalau SUDAH verify
       final isVerified = await _verifyTokenToBackend();
       if (!isVerified) {
         _setError("Gagal verifikasi ke backend");
