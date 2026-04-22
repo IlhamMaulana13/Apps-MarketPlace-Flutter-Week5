@@ -31,30 +31,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
   }
 
   // Logika Polling untuk mengecek status verifikasi tanpa mengubah UI
-  void _startPolling() {
-    _timer = Timer.periodic(const Duration(seconds: 3), (_) async {
-      final auth = context.read<AuthProvider>();
-
-      final currentUser = auth.firebaseUser;
-
-      if (currentUser == null) return;
-
-      await currentUser.reload();
-
-      final refreshedUser = currentUser;
-
-      if (refreshedUser.emailVerified) {
-        _timer?.cancel();
-
-        // 🔥 update provider secara manual
-        auth.checkEmailVerified().then((success) {
-          if (mounted && success) {
-            Navigator.pushReplacementNamed(context, AppRouter.dashboard);
-          }
-        });
-      }
-    });
-  }
+  
 
   Future<void> _resendEmail() async {
     if (_resendCooldown) return;
