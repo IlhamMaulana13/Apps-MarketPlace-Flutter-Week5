@@ -2,7 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:appsmarketplace/core/services/auth_provider.dart' as auth_provider;
+import 'package:appsmarketplace/core/services/auth_provider.dart'
+    as auth_provider;
 import 'package:appsmarketplace/core/routes/app_router.dart';
 import '../widgets/auth_header.dart';
 import '../widgets/custom_button.dart';
@@ -50,17 +51,14 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
         if (refreshedUser != null && refreshedUser.emailVerified) {
           timer.cancel();
 
-          final auth = context.read<AuthProvider>();
+          final auth = context.read<auth_provider.AuthProvider>();
 
           final success = await auth.checkEmailVerified();
 
           if (!mounted) return;
 
           if (success) {
-            Navigator.pushReplacementNamed(
-              context,
-              AppRouter.dashboard,
-            );
+            Navigator.pushReplacementNamed(context, AppRouter.dashboard);
           }
         }
       } catch (e) {
@@ -103,9 +101,9 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
         const SnackBar(content: Text('Email verifikasi dikirim ulang')),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal kirim email: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal kirim email: $e')));
     }
   }
 
@@ -182,14 +180,11 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
                 onPressed: () async {
                   _timer?.cancel();
 
-                  await context.read<AuthProvider>().logout();
+                  await context.read<auth_provider.AuthProvider>().logout();
 
                   if (!mounted) return;
 
-                  Navigator.pushReplacementNamed(
-                    context,
-                    AppRouter.login,
-                  );
+                  Navigator.pushReplacementNamed(context, AppRouter.login);
                 },
               ),
             ],
