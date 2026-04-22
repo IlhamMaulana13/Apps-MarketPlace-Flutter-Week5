@@ -160,3 +160,25 @@ IconButton(
               },
             ),
           ),
+
+           // TOTAL + CHECKOUT
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: Colors.grey)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("Total"),
+                    Text(
+                      "Rp ${formatPrice(cart.totalPrice)}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
