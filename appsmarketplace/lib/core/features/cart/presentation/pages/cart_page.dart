@@ -138,3 +138,25 @@ const SizedBox(height: 8),
 
                                 const Spacer(),
 
+IconButton(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                  ),
+                                  onPressed: () {
+                                    context.read<CartProvider>().removeItem(
+                                          item['ID'],
+                                        );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
