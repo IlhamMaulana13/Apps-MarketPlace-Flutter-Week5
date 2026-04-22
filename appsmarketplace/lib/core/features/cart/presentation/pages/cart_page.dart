@@ -111,3 +111,27 @@ Text(
 
 const SizedBox(height: 8),
 
+// QTY CONTROL
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.remove),
+                                  onPressed: () {
+                                    context.read<CartProvider>().updateQty(
+                                          item['ID'],
+                                          item['quantity'] - 1,
+                                        );
+                                  },
+                                ),
+
+                                Text("${item['quantity']}"),
+
+                                IconButton(
+                                  icon: const Icon(Icons.add),
+                                  onPressed: () {
+                                    context.read<CartProvider>().updateQty(
+                                          item['ID'],
+                                          item['quantity'] + 1,
+                                        );
+                                  },
+                                ),
