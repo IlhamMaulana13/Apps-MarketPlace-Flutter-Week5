@@ -51,6 +51,14 @@ class AuthProvider extends ChangeNotifier {
 
      await _firebaseUser!.reload();
 
+     if (!(_firebaseUser?.emailVerified ?? false)) {
+      await _auth.signOut(); // 🔥 penting
+
+      _status = AuthStatus.emailNotVerified;
+      notifyListeners();
+      return false;
+    }
+
   // ================= LOGIN GOOGLE =================
   Future<bool> loginWithGoogle() async {
     _setLoading();
