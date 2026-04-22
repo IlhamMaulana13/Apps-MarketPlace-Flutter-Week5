@@ -36,7 +36,9 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // ================= LOGIN EMAIL =================
-  
+  Future<bool> loginWithEmail({
+  required String email,
+  required String password,
 
   // ================= LOGIN GOOGLE =================
   Future<bool> loginWithGoogle() async {
