@@ -1,6 +1,6 @@
 import 'package:appsmarketplace/core/routes/app_router.dart';
 import 'package:appsmarketplace/core/services/auth_provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
@@ -33,23 +33,32 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
 
   // Logika Polling untuk mengecek status verifikasi tanpa mengubah UI
   void _startPolling() {
-    _timer = Timer.periodic(const Duration(seconds: 3), (_) async {
-      final auth = context.read<AuthProvider>();
-      await auth.firebaseUser?.reload();
+  _timer = Timer.periodic(const Duration(seconds: 3), (_) async {
+    final firebaseAuth = context.read<AuthProvider>();
 
-      // 🔥 WAJIB ambil ulang user dari Firebase
+    final user = firebaseAuth.firebaseUser;
+
+    if (user == null) return;
+
+    try {
+      await user.reload();
+
       final refreshedUser = FirebaseAuth.instance.currentUser;
 
       if (refreshedUser != null && refreshedUser.emailVerified) {
         _timer?.cancel();
-        final success = await auth.checkEmailVerified();
+
+        final success = await firebaseAuth.checkEmailVerified();
 
         if (mounted && success) {
           Navigator.pushReplacementNamed(context, AppRouter.dashboard);
         }
       }
-    });
-  }
+    } catch (e) {
+      debugPrint("VERIFY ERROR: $e");
+    }
+  });
+}
 
   Future<void> _resendEmail() async {
     if (_resendCooldown) return;
