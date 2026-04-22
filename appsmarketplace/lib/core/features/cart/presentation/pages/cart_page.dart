@@ -98,3 +98,6 @@ const SizedBox(width: 12),
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
+
+const SizedBox(height: 4),
+
