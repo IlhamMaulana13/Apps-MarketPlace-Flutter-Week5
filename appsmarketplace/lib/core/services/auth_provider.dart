@@ -186,6 +186,12 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> refreshUser() async {
+    await _auth.currentUser?.reload();
+    _firebaseUser = _auth.currentUser;
+    notifyListeners();
+  }
+
   // ================= CHECK EMAIL VERIFIED =================
   Future<bool> checkEmailVerified() async {
     try {

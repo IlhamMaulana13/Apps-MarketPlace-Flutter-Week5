@@ -1,11 +1,12 @@
 import 'package:appsmarketplace/core/routes/app_router.dart';
 import 'package:appsmarketplace/core/services/auth_provider.dart';
-import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import '../widgets/auth_header.dart';
 import '../widgets/custom_button.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class VerifyEmailPage extends StatefulWidget {
   const VerifyEmailPage({super.key});
