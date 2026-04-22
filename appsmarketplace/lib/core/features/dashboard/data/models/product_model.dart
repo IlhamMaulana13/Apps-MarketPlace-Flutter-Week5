@@ -17,7 +17,7 @@ class ProductModel {
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
   return ProductModel(
-    id: json['ID'], // ⚠️ huruf besar
+    id: json['ID'],
     name: json['name'],
     price: (json['price'] as num).toDouble(),
     category: json['category'],
