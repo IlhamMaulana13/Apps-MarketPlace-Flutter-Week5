@@ -208,6 +208,13 @@ class AuthProvider extends ChangeNotifier {
         return true;
       }
 
+      await user.reload();
+      final refreshedUser = FirebaseAuth.instance.currentUser;
+
+      if (refreshedUser == null || !refreshedUser.emailVerified) {
+        return false;
+      }
+
       return false;
     } catch (e) {
       debugPrint("CHECK EMAIL VERIFIED ERROR: $e");
