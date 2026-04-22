@@ -27,3 +27,19 @@ class _CartPageState extends State<CartPage> {
       context.read<CartProvider>().fetchCart();
     });
   }
+
+  @override
+  Widget build(BuildContext context) {
+    final cart = context.watch<CartProvider>();
+
+    if (cart.isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (cart.items.isEmpty) {
+      return const Scaffold(
+        body: Center(child: Text("Keranjang kosong")),
+      );
+    }
