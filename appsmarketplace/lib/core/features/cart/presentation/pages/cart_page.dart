@@ -54,3 +54,19 @@ class _CartPageState extends State<CartPage> {
               itemBuilder: (context, i) {
                 final item = cart.items[i];
                 final product = item['product'];
+                return Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        blurRadius: 6,
+                        color: Colors.black.withOpacity(0.05),
+                      ),
+                    ],
+                  ),
