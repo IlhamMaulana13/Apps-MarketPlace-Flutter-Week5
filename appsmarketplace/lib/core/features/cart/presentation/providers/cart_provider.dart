@@ -41,6 +41,15 @@ class CartProvider extends ChangeNotifier {
     await fetchCart();
   }
 
+  Future<void> updateItem(int id, int qty, String? size) async {
+    await DioClient.instance.put(
+      '/cart/$id',
+      data: {"quantity": qty, "size": size},
+    );
+
+    await fetchCart();
+  }
+
   Future<void> checkout() async {
     await DioClient.instance.post(
       '/orders/checkout',
