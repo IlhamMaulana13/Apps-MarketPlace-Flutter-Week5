@@ -34,32 +34,34 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
 
   // Logika Polling untuk mengecek status verifikasi tanpa mengubah UI
   void _startPolling() {
-  _timer = Timer.periodic(const Duration(seconds: 3), (_) async {
-    final firebaseAuth = context.read<AuthProvider>();
+    _timer = Timer.periodic(const Duration(seconds: 3), (_) async {
+      final auth = context.read<AuthProvider>();
 
-    final user = firebaseAuth.firebaseUser;
+      try {
+        // 🔥 ambil langsung dari Firebase (JANGAN dari provider)
+        final user = FirebaseAuth.instance.currentUser;
 
-    if (user == null) return;
+        if (user == null) return;
 
-    try {
-      await user.reload();
+        await user.reload();
 
-      final refreshedUser = FirebaseAuth.instance.currentUser;
+        final refreshedUser = FirebaseAuth.instance.currentUser;
 
-      if (refreshedUser != null && refreshedUser.emailVerified) {
-        _timer?.cancel();
+        if (refreshedUser != null && refreshedUser.emailVerified) {
+          _timer?.cancel();
 
-        final success = await firebaseAuth.checkEmailVerified();
+          // 🔥 pakai provider untuk sync ke backend
+          final success = await auth.checkEmailVerified();
 
-        if (mounted && success) {
-          Navigator.pushReplacementNamed(context, AppRouter.dashboard);
+          if (mounted && success) {
+            Navigator.pushReplacementNamed(context, AppRouter.dashboard);
+          }
         }
+      } catch (e) {
+        debugPrint("VERIFY ERROR: $e");
       }
-    } catch (e) {
-      debugPrint("VERIFY ERROR: $e");
-    }
-  });
-}
+    });
+  }
 
   Future<void> _resendEmail() async {
     if (_resendCooldown) return;
