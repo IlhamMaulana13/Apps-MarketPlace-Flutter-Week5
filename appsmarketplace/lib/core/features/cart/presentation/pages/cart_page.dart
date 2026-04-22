@@ -10,6 +10,9 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
+  // ✅ STATE SIZE
+  Map<int, String> selectedSizes = {};
+
   String formatPrice(num price) {
     return price
         .toStringAsFixed(0)
@@ -33,11 +36,15 @@ class _CartPageState extends State<CartPage> {
     final cart = context.watch<CartProvider>();
 
     if (cart.isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
     if (cart.items.isEmpty) {
-      return const Scaffold(body: Center(child: Text("Keranjang kosong")));
+      return const Scaffold(
+        body: Center(child: Text("Keranjang kosong")),
+      );
     }
 
     return Scaffold(
@@ -50,7 +57,13 @@ class _CartPageState extends State<CartPage> {
               itemBuilder: (context, i) {
                 final item = cart.items[i];
                 final product = item['product'];
-                final size = item['size'] ?? "-";
+
+                // ✅ ambil size dari backend
+                final sizeFromApi = item['size'] ?? "M";
+
+                // ✅ inject ke map biar dropdown aman
+                selectedSizes.putIfAbsent(item['ID'], () => sizeFromApi);
+
                 return Container(
                   margin: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -106,23 +119,51 @@ class _CartPageState extends State<CartPage> {
                               ),
                             ),
 
-                            Text(
-                              "Size: $size",
-                              style: const TextStyle(color: Colors.grey),
+                            const SizedBox(height: 6),
+
+                            // ✅ DROPDOWN SIZE (FIX)
+                            DropdownButton<String>(
+                              value: selectedSizes[item['ID']],
+                              isExpanded: true,
+                              items: ["S", "M", "L", "XL"]
+                                  .map(
+                                    (e) => DropdownMenuItem(
+                                      value: e,
+                                      child: Text(e),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (val) async {
+                                if (val == null) return;
+
+                                setState(() {
+                                  selectedSizes[item['ID']] = val;
+                                });
+
+                                // 🔥 update ke backend
+                                await context
+                                    .read<CartProvider>()
+                                    .updateItem(
+                                      item['ID'],
+                                      item['quantity'],
+                                      val,
+                                    );
+                              },
                             ),
 
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 6),
 
-                            // QTY CONTROL
+                            // QTY + DELETE
                             Row(
                               children: [
                                 IconButton(
                                   icon: const Icon(Icons.remove),
                                   onPressed: () {
-                                    context.read<CartProvider>().updateQty(
-                                      item['ID'],
-                                      item['quantity'] - 1,
-                                    );
+                                    context.read<CartProvider>().updateItem(
+                                          item['ID'],
+                                          item['quantity'] - 1,
+                                          selectedSizes[item['ID']],
+                                        );
                                   },
                                 ),
 
@@ -131,10 +172,11 @@ class _CartPageState extends State<CartPage> {
                                 IconButton(
                                   icon: const Icon(Icons.add),
                                   onPressed: () {
-                                    context.read<CartProvider>().updateQty(
-                                      item['ID'],
-                                      item['quantity'] + 1,
-                                    );
+                                    context.read<CartProvider>().updateItem(
+                                          item['ID'],
+                                          item['quantity'] + 1,
+                                          selectedSizes[item['ID']],
+                                        );
                                   },
                                 ),
 
@@ -146,9 +188,9 @@ class _CartPageState extends State<CartPage> {
                                     color: Colors.red,
                                   ),
                                   onPressed: () {
-                                    context.read<CartProvider>().removeItem(
-                                      item['ID'],
-                                    );
+                                    context
+                                        .read<CartProvider>()
+                                        .removeItem(item['ID']);
                                   },
                                 ),
                               ],
@@ -194,7 +236,9 @@ class _CartPageState extends State<CartPage> {
                       await context.read<CartProvider>().checkout();
 
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Checkout berhasil")),
+                        const SnackBar(
+                          content: Text("Checkout berhasil"),
+                        ),
                       );
                     },
                     child: const Text("Checkout"),
