@@ -195,35 +195,35 @@ class AuthProvider extends ChangeNotifier {
   // ================= CHECK EMAIL VERIFIED =================
   Future<bool> checkEmailVerified() async {
     try {
-      final user = _auth.currentUser;
-      if (user == null || !user.emailVerified) return false;
+      final user = FirebaseAuth.instance.currentUser;
 
-      final token = await user.getIdToken();
+      if (user == null) return false;
+
+      await user.reload();
+
+      if (!user.emailVerified) return false;
+
+      final token = await user.getIdToken(true); // 🔥 refresh token
 
       final response = await DioClient.instance.post(
-        ApiConstants.verifyToken,
+        '/auth/verify-token',
         data: {"firebase_token": token},
       );
 
       if (response.data['success'] == true) {
         _backendToken = response.data['data']['access_token'];
         await SecureStorage.saveToken(_backendToken!);
+
         _firebaseUser = user;
         _status = AuthStatus.authenticated;
         notifyListeners();
+
         return true;
-      }
-
-      await user.reload();
-      final refreshedUser = FirebaseAuth.instance.currentUser;
-
-      if (refreshedUser == null || !refreshedUser.emailVerified) {
-        return false;
       }
 
       return false;
     } catch (e) {
-      debugPrint("CHECK EMAIL VERIFIED ERROR: $e");
+      debugPrint("CHECK VERIFY ERROR: $e");
       return false;
     }
   }
