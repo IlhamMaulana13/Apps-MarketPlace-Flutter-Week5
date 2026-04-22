@@ -133,6 +133,7 @@ class AuthProvider extends ChangeNotifier {
 
       // Send email verification
       await _firebaseUser!.sendEmailVerification();
+      await _auth.signOut();
 
       _status = AuthStatus.emailNotVerified;
       notifyListeners();
