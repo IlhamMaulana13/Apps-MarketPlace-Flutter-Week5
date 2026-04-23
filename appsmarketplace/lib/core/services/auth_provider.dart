@@ -117,7 +117,6 @@ class AuthProvider extends ChangeNotifier {
       final userCred = await _auth.signInWithCredential(credential);
       _firebaseUser = userCred.user;
 
-
       if (!(_firebaseUser?.emailVerified ?? false)) {
         _status = AuthStatus.emailNotVerified;
         notifyListeners();
@@ -137,6 +136,32 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       _setError('Gagal login Google: $e');
+      return false;
+    }
+  }
+
+  Future<bool> _verifyTokenToBackend() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final firebaseToken = await user!.getIdToken();
+
+      final response = await DioClient.instance.post(
+        '/auth/verify-token',
+        data: {"firebase_token": firebaseToken},
+      );
+
+      if (response.data['success'] == true) {
+        final backendToken = response.data['data']['access_token'];
+
+        _backendToken = backendToken;
+        await SecureStorage.saveToken(backendToken);
+
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      debugPrint("VERIFY TOKEN ERROR: $e");
       return false;
     }
   }
