@@ -77,13 +77,13 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
 
     if (success) {
-      Future.microtask(() {
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, AppRouter.dashboard);
-        }
-      });
+      Navigator.pushReplacementNamed(context, AppRouter.dashboard);
     } else {
-      _showError(auth.errorMessage ?? 'Login Google gagal');
+      if (auth.status == auth_provider.AuthStatus.emailNotVerified) {
+        Navigator.pushReplacementNamed(context, AppRouter.verifyEmail);
+      } else {
+        _showError(auth.errorMessage ?? 'Login Google gagal');
+      }
     }
   }
 
@@ -118,7 +118,8 @@ class _LoginPageState extends State<LoginPage> {
                     const AuthHeader(
                       icon: Icons.lock_person_rounded,
                       title: 'Selamat Datang',
-                      subtitle: 'Silakan masuk untuk mengakses Maduras\'s Jerseys',
+                      subtitle:
+                          'Silakan masuk untuk mengakses Maduras\'s Jerseys',
                     ),
                     const SizedBox(height: 32),
                     CustomTextField(
