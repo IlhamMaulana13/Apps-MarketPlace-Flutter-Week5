@@ -11,6 +11,7 @@ type Product struct {
 	Category    string  `gorm:"size:100;index"           json:"category"`
 	ImageURL    string  `gorm:"size:500"                 json:"image_url"`
 	IsActive    bool    `gorm:"default:true;index"       json:"is_active"`
+	Size        string  `gorm:"size:50;index"            json:"size"`
 }
 
 // Request/Response DTOs (Data Transfer Objects)

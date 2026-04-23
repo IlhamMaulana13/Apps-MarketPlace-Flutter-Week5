@@ -52,14 +52,11 @@ func SetupRouter() *gin.Engine {
 			products := protected.Group("/products")
 			{
 				products.GET("", productHandler.GetAll)
-				products.GET("/:id", productHandler.GetByID)
 
 				adminProducts := products.Group("")
 				adminProducts.Use(middleware.AdminOnly())
 				{
 					adminProducts.POST("", productHandler.Create)
-					adminProducts.PUT("/:id", productHandler.Update)
-					adminProducts.DELETE("/:id", productHandler.Delete)
 				}
 			}
 
@@ -72,6 +69,7 @@ func SetupRouter() *gin.Engine {
 				cart.DELETE("/:id", cartHandler.RemoveCartItem) // DELETE /v1/cart/:id
 				cart.DELETE("", cartHandler.ClearCart)          // DELETE /v1/cart
 			}
+
 		}
 	}
 
