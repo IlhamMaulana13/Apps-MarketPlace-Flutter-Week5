@@ -10,8 +10,9 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
-  // ✅ STATE SIZE
   Map<int, String> selectedSizes = {};
+
+  bool isCheckingOut = false;
 
   String formatPrice(num price) {
     return price
@@ -31,24 +32,50 @@ class _CartPageState extends State<CartPage> {
     });
   }
 
+  Future<void> _simulateCheckout() async {
+    setState(() {
+      isCheckingOut = true;
+    });
+
+    // ⏳ simulasi loading
+    await Future.delayed(const Duration(seconds: 1));
+
+    // 🧠 kosongkan cart (tanpa backend)
+    final cart = context.read<CartProvider>();
+    cart.items.clear();
+    cart.totalPrice = 0;
+    cart.notifyListeners();
+
+    setState(() {
+      isCheckingOut = false;
+    });
+
+    if (!mounted) return;
+
+    // 🎉 success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Checkout berhasil 🎉"),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
 
     if (cart.isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (cart.items.isEmpty) {
-      return const Scaffold(
-        body: Center(child: Text("Keranjang kosong")),
-      );
+      return const Scaffold(body: Center(child: Text("Keranjang kosong")));
     }
 
     return Scaffold(
       appBar: AppBar(title: const Text("Keranjang")),
+
       body: Column(
         children: [
           Expanded(
@@ -58,10 +85,7 @@ class _CartPageState extends State<CartPage> {
                 final item = cart.items[i];
                 final product = item['product'];
 
-                // ✅ ambil size dari backend
                 final sizeFromApi = item['size'] ?? "M";
-
-                // ✅ inject ke map biar dropdown aman
                 selectedSizes.putIfAbsent(item['ID'], () => sizeFromApi);
 
                 return Container(
@@ -82,7 +106,6 @@ class _CartPageState extends State<CartPage> {
                   ),
                   child: Row(
                     children: [
-                      // IMAGE
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.network(
@@ -95,7 +118,6 @@ class _CartPageState extends State<CartPage> {
 
                       const SizedBox(width: 12),
 
-                      // DETAIL
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,7 +143,6 @@ class _CartPageState extends State<CartPage> {
 
                             const SizedBox(height: 6),
 
-                            // ✅ DROPDOWN SIZE (FIX)
                             DropdownButton<String>(
                               value: selectedSizes[item['ID']],
                               isExpanded: true,
@@ -140,30 +161,26 @@ class _CartPageState extends State<CartPage> {
                                   selectedSizes[item['ID']] = val;
                                 });
 
-                                // 🔥 update ke backend
-                                await context
-                                    .read<CartProvider>()
-                                    .updateItem(
-                                      item['ID'],
-                                      item['quantity'],
-                                      val,
-                                    );
+                                await context.read<CartProvider>().updateItem(
+                                  item['ID'],
+                                  item['quantity'],
+                                  val,
+                                );
                               },
                             ),
 
                             const SizedBox(height: 6),
 
-                            // QTY + DELETE
                             Row(
                               children: [
                                 IconButton(
                                   icon: const Icon(Icons.remove),
                                   onPressed: () {
                                     context.read<CartProvider>().updateItem(
-                                          item['ID'],
-                                          item['quantity'] - 1,
-                                          selectedSizes[item['ID']],
-                                        );
+                                      item['ID'],
+                                      item['quantity'] - 1,
+                                      selectedSizes[item['ID']],
+                                    );
                                   },
                                 ),
 
@@ -173,10 +190,10 @@ class _CartPageState extends State<CartPage> {
                                   icon: const Icon(Icons.add),
                                   onPressed: () {
                                     context.read<CartProvider>().updateItem(
-                                          item['ID'],
-                                          item['quantity'] + 1,
-                                          selectedSizes[item['ID']],
-                                        );
+                                      item['ID'],
+                                      item['quantity'] + 1,
+                                      selectedSizes[item['ID']],
+                                    );
                                   },
                                 ),
 
@@ -188,9 +205,9 @@ class _CartPageState extends State<CartPage> {
                                     color: Colors.red,
                                   ),
                                   onPressed: () {
-                                    context
-                                        .read<CartProvider>()
-                                        .removeItem(item['ID']);
+                                    context.read<CartProvider>().removeItem(
+                                      item['ID'],
+                                    );
                                   },
                                 ),
                               ],
@@ -205,7 +222,7 @@ class _CartPageState extends State<CartPage> {
             ),
           ),
 
-          // TOTAL + CHECKOUT
+          // 💰 TOTAL + CHECKOUT
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
@@ -232,16 +249,17 @@ class _CartPageState extends State<CartPage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () async {
-                      await context.read<CartProvider>().checkout();
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Checkout berhasil"),
-                        ),
-                      );
-                    },
-                    child: const Text("Checkout"),
+                    onPressed: isCheckingOut ? null : _simulateCheckout,
+                    child: isCheckingOut
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text("Checkout"),
                   ),
                 ),
               ],

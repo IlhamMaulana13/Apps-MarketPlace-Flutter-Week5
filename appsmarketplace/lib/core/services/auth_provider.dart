@@ -29,10 +29,17 @@ class AuthProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isLoading => _status == AuthStatus.loading;
 
-  // 🔥 AUTO SYNC FIREBASE USER
   AuthProvider() {
-    _auth.authStateChanges().listen((user) {
+    _auth.authStateChanges().listen((user) async {
       _firebaseUser = user;
+
+      if (user == null) {
+        _status = AuthStatus.unauthenticated;
+      } else {
+        _status = AuthStatus.authenticated;
+        await user.getIdToken(true);
+      }
+
       notifyListeners();
     });
   }
@@ -54,6 +61,7 @@ class AuthProvider extends ChangeNotifier {
     required String password,
   }) async {
     _setLoading();
+
     try {
       final credential = await _auth.signInWithEmailAndPassword(
         email: email,
@@ -61,14 +69,15 @@ class AuthProvider extends ChangeNotifier {
       );
 
       final user = credential.user;
+
       if (user == null) {
         _setError("User tidak ditemukan");
         return false;
       }
 
       await user.reload();
+      await user.getIdToken(true);
 
-      // ❗ HARUS VERIFIED
       if (!user.emailVerified) {
         _firebaseUser = user;
         _status = AuthStatus.emailNotVerified;
@@ -79,7 +88,7 @@ class AuthProvider extends ChangeNotifier {
       final success = await _verifyTokenToBackend();
 
       if (!success) {
-        _setError("Gagal verifikasi backend");
+        _setError("Backend gagal verifikasi");
         return false;
       }
 
@@ -88,20 +97,21 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
 
       return true;
-    } on FirebaseAuthException catch (e) {
-      _setError(e.message ?? 'Login gagal');
+    } catch (e) {
+      _setError(e.toString());
       return false;
     }
   }
 
-  // ================= LOGIN GOOGLE =================
+  // ================= GOOGLE LOGIN =================
   Future<bool> loginWithGoogle() async {
     _setLoading();
+
     try {
       final googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
-        _setError('Login Google dibatalkan');
+        _setError("Login dibatalkan");
         return false;
       }
 
@@ -120,12 +130,11 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
+      await user.reload();
+      await user.getIdToken(true);
+
       _firebaseUser = user;
 
-      print("USER: ${user.email}");
-      print("VERIFIED: ${user.emailVerified}");
-
-      // Google biasanya sudah verified
       if (!user.emailVerified) {
         _status = AuthStatus.emailNotVerified;
         notifyListeners();
@@ -135,7 +144,7 @@ class AuthProvider extends ChangeNotifier {
       final success = await _verifyTokenToBackend();
 
       if (!success) {
-        _setError("Gagal verifikasi backend");
+        _setError("Backend gagal verifikasi");
         return false;
       }
 
@@ -144,48 +153,7 @@ class AuthProvider extends ChangeNotifier {
 
       return true;
     } catch (e) {
-      _setError('Gagal login Google: $e');
-      return false;
-    }
-  }
-
-  // ================= VERIFY TOKEN =================
-  Future<bool> _verifyTokenToBackend() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-
-      if (user == null) {
-        print("USER NULL ❌");
-        return false;
-      }
-
-      // 🔥 WAJIB TRUE (INI YANG FIX BUG LO)
-      final firebaseToken = await user.getIdToken(true);
-
-      print("TOKEN: $firebaseToken");
-
-      final response = await DioClient.instance.post(
-        '/auth/verify-token',
-        data: {"firebase_token": firebaseToken},
-      );
-
-      print("RESPONSE: ${response.data}");
-
-      if (response.data['success'] == true) {
-        final backendToken = response.data['data']['access_token'];
-
-        _backendToken = backendToken;
-        await SecureStorage.saveToken(backendToken);
-
-        print("BACKEND TOKEN OK ✅");
-
-        return true;
-      }
-
-      print("BACKEND REJECT ❌");
-      return false;
-    } catch (e) {
-      debugPrint("VERIFY TOKEN ERROR: $e");
+      _setError("Google login error: $e");
       return false;
     }
   }
@@ -197,6 +165,7 @@ class AuthProvider extends ChangeNotifier {
     required String password,
   }) async {
     _setLoading();
+
     try {
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -206,7 +175,7 @@ class AuthProvider extends ChangeNotifier {
       final user = credential.user;
 
       if (user == null) {
-        _setError("Gagal membuat user");
+        _setError("Gagal register");
         return false;
       }
 
@@ -218,8 +187,59 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
 
       return true;
-    } on FirebaseAuthException catch (e) {
-      _setError(e.message ?? 'Pendaftaran gagal');
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    }
+  }
+
+  // ================= VERIFY TOKEN TO BACKEND =================
+  Future<bool> _verifyTokenToBackend() async {
+    try {
+      final user = _auth.currentUser;
+
+      if (user == null) {
+        print("USER NULL ❌");
+        return false;
+      }
+
+      await user.reload();
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      final token = await user.getIdToken(true);
+
+      print("TOKEN READY: $token");
+
+      if (token == null || token.isEmpty) {
+        print("TOKEN EMPTY ❌");
+        return false;
+      }
+
+      final response = await DioClient.instance.post(
+        '/auth/verify-token',
+        data: {"firebase_token": token},
+      );
+
+      print("BACKEND RESPONSE: ${response.data}");
+
+      if (response.data['success'] != true) {
+        print("BACKEND REJECT ❌");
+        return false;
+      }
+
+      final backendToken = response.data['data']['access_token'];
+
+      _backendToken = backendToken;
+      await SecureStorage.saveToken(backendToken);
+
+      _status = AuthStatus.authenticated;
+      notifyListeners();
+
+      print("LOGIN SUCCESS ✅");
+
+      return true;
+    } catch (e) {
+      print("VERIFY ERROR ❌ $e");
       return false;
     }
   }
@@ -227,17 +247,18 @@ class AuthProvider extends ChangeNotifier {
   // ================= CHECK EMAIL VERIFIED =================
   Future<bool> checkEmailVerified() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _auth.currentUser;
 
       if (user == null) return false;
 
       await user.reload();
+      await user.getIdToken(true);
 
       if (!user.emailVerified) return false;
 
       return await _verifyTokenToBackend();
     } catch (e) {
-      debugPrint("CHECK VERIFY ERROR: $e");
+      print("CHECK VERIFY ERROR: $e");
       return false;
     }
   }

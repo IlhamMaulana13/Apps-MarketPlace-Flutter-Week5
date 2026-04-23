@@ -32,28 +32,33 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
     super.dispose();
   }
 
-  // ================= POLLING =================
+  // ================= POLLING FIXED =================
   void _startPolling() {
     _timer = Timer.periodic(const Duration(seconds: 3), (timer) async {
       try {
+        final authProvider = context.read<auth_provider.AuthProvider>();
+
         final user = FirebaseAuth.instance.currentUser;
 
-        // ❗ kalau user null → stop biar gak error
         if (user == null) {
           timer.cancel();
           return;
         }
 
+        // 🔥 FORCE REFRESH REAL
         await user.reload();
 
-        final refreshedUser = FirebaseAuth.instance.currentUser;
+        final updatedUser = FirebaseAuth.instance.currentUser;
 
-        if (refreshedUser != null && refreshedUser.emailVerified) {
+        if (updatedUser == null) return;
+
+        print("EMAIL VERIFIED CHECK: ${updatedUser.emailVerified}");
+
+        if (updatedUser.emailVerified) {
           timer.cancel();
 
-          final auth = context.read<auth_provider.AuthProvider>();
-
-          final success = await auth.checkEmailVerified();
+          // 🔥 IMPORTANT: refresh token BEFORE backend login
+          final success = await authProvider.checkEmailVerified();
 
           if (!mounted) return;
 
@@ -73,7 +78,6 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-
       if (user == null) return;
 
       await user.sendEmailVerification();
@@ -107,7 +111,6 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
     }
   }
 
-  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -123,7 +126,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
                 icon: Icons.mark_email_unread_outlined,
                 title: 'Verifikasi Email Kamu',
                 subtitle:
-                    'Klik link di email kamu. Halaman ini akan lanjut otomatis.',
+                    'Klik link di email kamu. Sistem akan otomatis login.',
                 iconColor: Colors.orange,
               ),
 
@@ -162,7 +165,6 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
 
               const SizedBox(height: 32),
 
-              // 🔁 RESEND
               CustomButton(
                 label: _resendCooldown
                     ? 'Kirim Ulang ($_countdown s)'
@@ -173,7 +175,6 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
 
               const SizedBox(height: 16),
 
-              // 🚪 LOGOUT
               CustomButton(
                 label: 'Logout / Ganti Akun',
                 variant: ButtonVariant.text,
