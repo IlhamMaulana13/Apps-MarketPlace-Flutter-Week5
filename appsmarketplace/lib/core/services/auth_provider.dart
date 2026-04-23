@@ -206,7 +206,9 @@ class AuthProvider extends ChangeNotifier {
       await user.reload();
       await Future.delayed(const Duration(milliseconds: 500));
 
-      final token = await user.getIdToken(true);
+      final token = await user.getIdToken();
+      await user.reload();
+      final refreshedToken = await user.getIdToken();
 
       print("TOKEN READY: $token");
 

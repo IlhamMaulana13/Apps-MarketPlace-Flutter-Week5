@@ -11,7 +11,6 @@ import (
 	"github.com/IlhamMaulana13/UTSApps-MarketPlace/models"
 	"github.com/IlhamMaulana13/UTSApps-MarketPlace/repositories"
 	"github.com/golang-jwt/jwt/v5"
-
 	"gorm.io/gorm"
 )
 
@@ -20,56 +19,83 @@ type AuthService struct {
 }
 
 func NewAuthService() *AuthService {
-	return &AuthService{userRepo: repositories.NewUserRepository()}
+	return &AuthService{
+		userRepo: repositories.NewUserRepository(),
+	}
 }
 
-// VerifyFirebaseToken verifikasi token dari Firebase,
-// pastikan email sudah verified, lalu return Backend JWT
 func (s *AuthService) VerifyFirebaseToken(firebaseToken string) (string, *models.User, error) {
-	// 1. Verifikasi Firebase ID Token ke server Google
+
+	// 1. VERIFY FIREBASE TOKEN
 	token, err := config.FirebaseAuth.VerifyIDToken(context.Background(), firebaseToken)
 	if err != nil {
 		return "", nil, errors.New("firebase token tidak valid atau kadaluarsa")
 	}
 
-	// 2. Cek apakah email sudah diverifikasi
+	// 2. CHECK EMAIL VERIFIED
 	emailVerified, _ := token.Claims["email_verified"].(bool)
 	if !emailVerified {
 		return "", nil, errors.New("EMAIL_NOT_VERIFIED")
 	}
 
-	// 3. Ambil data dari claims Firebase token
+	// 3. EXTRACT DATA
 	uid := token.UID
 	email, _ := token.Claims["email"].(string)
 	name, _ := token.Claims["name"].(string)
 
-	// 4. Cari user di database, buat jika belum ada (first time login)
+	// 4. CARI USER BY FIREBASE UID
 	user, err := s.userRepo.FindByFirebaseUID(uid)
+
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		// User pertama kali login — buat user baru
-		now := time.Now().Unix()
-		user = &models.User{
-			FirebaseUID:   uid,
-			Email:         email,
-			Name:          name,
-			Role:          "user",
-			EmailVerified: true,
-			LastLoginAt:   &now,
+
+		// 🔥 5. CEK BY EMAIL (INI FIX UTAMA)
+		existingUser, errEmail := s.userRepo.FindByEmail(email)
+
+		if errEmail == nil {
+			// USER SUDAH ADA → UPDATE LINK KE FIREBASE UID
+			now := time.Now().Unix()
+
+			existingUser.FirebaseUID = uid
+			existingUser.LastLoginAt = &now
+			existingUser.EmailVerified = true
+
+			_ = s.userRepo.Update(existingUser)
+
+			user = existingUser
+
+		} else {
+			// USER BENAR-BENAR BARU → CREATE
+			now := time.Now().Unix()
+
+			newUser := &models.User{
+				FirebaseUID:   uid,
+				Email:         email,
+				Name:          name,
+				Role:          "user",
+				EmailVerified: true,
+				LastLoginAt:   &now,
+			}
+
+			if err := s.userRepo.Create(newUser); err != nil {
+				return "", nil, err
+			}
+
+			user = newUser
 		}
-		if err := s.userRepo.Create(user); err != nil {
-			return "", nil, errors.New("gagal membuat user baru")
-		}
+
 	} else if err != nil {
 		return "", nil, errors.New("error mengambil data user")
 	} else {
-		// Update last login
+		// USER SUDAH ADA BY FIREBASE UID → UPDATE LOGIN
 		now := time.Now().Unix()
+
 		user.LastLoginAt = &now
 		user.EmailVerified = true
-		s.userRepo.Update(user)
+
+		_ = s.userRepo.Update(user)
 	}
 
-	// 5. Generate Backend JWT Token
+	// 6. GENERATE JWT BACKEND
 	jwtToken, err := s.generateJWT(user)
 	if err != nil {
 		return "", nil, errors.New("gagal membuat token")
@@ -78,14 +104,13 @@ func (s *AuthService) VerifyFirebaseToken(firebaseToken string) (string, *models
 	return jwtToken, user, nil
 }
 
-// generateJWT membuat JWT token dengan payload user
 func (s *AuthService) generateJWT(user *models.User) (string, error) {
+
 	expireHours, _ := strconv.Atoi(os.Getenv("JWT_EXPIRE_HOURS"))
 	if expireHours == 0 {
 		expireHours = 24
 	}
 
-	// Claims adalah payload yang disimpan dalam token
 	claims := jwt.MapClaims{
 		"sub":            user.ID,
 		"firebase_uid":   user.FirebaseUID,
@@ -97,7 +122,7 @@ func (s *AuthService) generateJWT(user *models.User) (string, error) {
 		"exp":            time.Now().Add(time.Hour * time.Duration(expireHours)).Unix(),
 	}
 
-	// Buat token dengan algoritma HS256 dan secret key
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
 	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 }
