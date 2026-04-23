@@ -42,6 +42,12 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _setError(String message) {
+    _errorMessage = message;
+    _status = AuthStatus.error;
+    notifyListeners();
+  }
+
   // ================= LOGIN EMAIL =================
   Future<bool> loginWithEmail({
     required String email,
@@ -60,9 +66,9 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
-      await user.reload(); // 🔥 refresh data
+      await user.reload();
 
-      // ❗ CEK EMAIL VERIFIED DULU
+      // ❗ HARUS VERIFIED
       if (!user.emailVerified) {
         _firebaseUser = user;
         _status = AuthStatus.emailNotVerified;
@@ -70,26 +76,18 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
-      // 🔥 kalau sudah verified baru lanjut backend
-      final token = await user.getIdToken(true);
+      final success = await _verifyTokenToBackend();
 
-      final response = await DioClient.instance.post(
-        '/auth/verify-token',
-        data: {"firebase_token": token},
-      );
-
-      if (response.data['success'] == true) {
-        _backendToken = response.data['data']['access_token'];
-        await SecureStorage.saveToken(_backendToken!);
-
-        _firebaseUser = user;
-        _status = AuthStatus.authenticated;
-        notifyListeners();
-        return true;
+      if (!success) {
+        _setError("Gagal verifikasi backend");
+        return false;
       }
 
-      _setError("Gagal verifikasi backend");
-      return false;
+      _firebaseUser = user;
+      _status = AuthStatus.authenticated;
+      notifyListeners();
+
+      return true;
     } on FirebaseAuthException catch (e) {
       _setError(e.message ?? 'Login gagal');
       return false;
@@ -115,24 +113,35 @@ class AuthProvider extends ChangeNotifier {
       );
 
       final userCred = await _auth.signInWithCredential(credential);
-      _firebaseUser = userCred.user;
+      final user = userCred.user;
 
-      if (!(_firebaseUser?.emailVerified ?? false)) {
+      if (user == null) {
+        _setError("User Google gagal");
+        return false;
+      }
+
+      _firebaseUser = user;
+
+      print("USER: ${user.email}");
+      print("VERIFIED: ${user.emailVerified}");
+
+      // Google biasanya sudah verified
+      if (!user.emailVerified) {
         _status = AuthStatus.emailNotVerified;
         notifyListeners();
         return false;
       }
 
-      // ✅ kirim token ke backend
-      final isVerified = await _verifyTokenToBackend();
+      final success = await _verifyTokenToBackend();
 
-      if (!isVerified) {
-        _setError("Gagal verifikasi ke backend");
+      if (!success) {
+        _setError("Gagal verifikasi backend");
         return false;
       }
 
       _status = AuthStatus.authenticated;
       notifyListeners();
+
       return true;
     } catch (e) {
       _setError('Gagal login Google: $e');
@@ -140,15 +149,27 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  // ================= VERIFY TOKEN =================
   Future<bool> _verifyTokenToBackend() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
-      final firebaseToken = await user!.getIdToken();
+
+      if (user == null) {
+        print("USER NULL ❌");
+        return false;
+      }
+
+      // 🔥 WAJIB TRUE (INI YANG FIX BUG LO)
+      final firebaseToken = await user.getIdToken(true);
+
+      print("TOKEN: $firebaseToken");
 
       final response = await DioClient.instance.post(
         '/auth/verify-token',
         data: {"firebase_token": firebaseToken},
       );
+
+      print("RESPONSE: ${response.data}");
 
       if (response.data['success'] == true) {
         final backendToken = response.data['data']['access_token'];
@@ -156,9 +177,12 @@ class AuthProvider extends ChangeNotifier {
         _backendToken = backendToken;
         await SecureStorage.saveToken(backendToken);
 
+        print("BACKEND TOKEN OK ✅");
+
         return true;
       }
 
+      print("BACKEND REJECT ❌");
       return false;
     } catch (e) {
       debugPrint("VERIFY TOKEN ERROR: $e");
@@ -211,25 +235,7 @@ class AuthProvider extends ChangeNotifier {
 
       if (!user.emailVerified) return false;
 
-      final token = await user.getIdToken(true);
-
-      final response = await DioClient.instance.post(
-        '/auth/verify-token',
-        data: {"firebase_token": token},
-      );
-
-      if (response.data['success'] == true) {
-        _backendToken = response.data['data']['access_token'];
-        await SecureStorage.saveToken(_backendToken!);
-
-        _firebaseUser = user;
-        _status = AuthStatus.authenticated;
-        notifyListeners();
-
-        return true;
-      }
-
-      return false;
+      return await _verifyTokenToBackend();
     } catch (e) {
       debugPrint("CHECK VERIFY ERROR: $e");
       return false;
@@ -246,13 +252,6 @@ class AuthProvider extends ChangeNotifier {
     _backendToken = null;
     _status = AuthStatus.unauthenticated;
 
-    notifyListeners();
-  }
-
-  // ================= ERROR =================
-  void _setError(String message) {
-    _errorMessage = message;
-    _status = AuthStatus.error;
     notifyListeners();
   }
 }
