@@ -101,6 +101,7 @@ class AuthProvider extends ChangeNotifier {
     _setLoading();
     try {
       final googleUser = await _googleSignIn.signIn();
+
       if (googleUser == null) {
         _setError('Login Google dibatalkan');
         return false;
@@ -114,32 +115,26 @@ class AuthProvider extends ChangeNotifier {
       );
 
       final userCred = await _auth.signInWithCredential(credential);
-      final user = userCred.user;
+      _firebaseUser = userCred.user;
 
-      if (user == null) {
-        _setError("User tidak ditemukan");
+
+      if (!(_firebaseUser?.emailVerified ?? false)) {
+        _status = AuthStatus.emailNotVerified;
+        notifyListeners();
         return false;
       }
 
-      final token = await user.getIdToken(true);
+      // ✅ kirim token ke backend
+      final isVerified = await _verifyTokenToBackend();
 
-      final response = await DioClient.instance.post(
-        '/auth/verify-token',
-        data: {"firebase_token": token},
-      );
-
-      if (response.data['success'] == true) {
-        _backendToken = response.data['data']['access_token'];
-        await SecureStorage.saveToken(_backendToken!);
-
-        _firebaseUser = user;
-        _status = AuthStatus.authenticated;
-        notifyListeners();
-        return true;
+      if (!isVerified) {
+        _setError("Gagal verifikasi ke backend");
+        return false;
       }
 
-      _setError("Gagal verifikasi backend");
-      return false;
+      _status = AuthStatus.authenticated;
+      notifyListeners();
+      return true;
     } catch (e) {
       _setError('Gagal login Google: $e');
       return false;
