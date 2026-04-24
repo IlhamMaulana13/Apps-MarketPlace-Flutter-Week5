@@ -7,6 +7,7 @@ class AppTheme {
       brightness: Brightness.light, // ← terang
       colorScheme: ColorScheme.fromSeed(
         brightness: Brightness.light,
+        seedColor: AppColors.primary,
         primary: AppColors.primary, // ← biru tua
         surface: AppColors.surface, // ← putih
       ),
@@ -15,7 +16,6 @@ class AppTheme {
         backgroundColor: AppColors.primary, // ← biru tua
         foregroundColor: Colors.white,
       ),
-
     );
   }
 
@@ -24,6 +24,7 @@ class AppTheme {
       brightness: Brightness.dark, // ← gelap
       colorScheme: ColorScheme.fromSeed(
         brightness: Brightness.dark,
+        seedColor: AppColors.accent,
         primary: AppColors.accent, // ← biru muda
         surface: AppColors.darkSurface, // ← abu gelap
       ),

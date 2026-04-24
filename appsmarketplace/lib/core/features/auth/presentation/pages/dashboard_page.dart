@@ -1,10 +1,11 @@
 import 'dart:async';
-import 'package:appsmarketplace/core/features/cart/presentation/pages/cart_page.dart';
-import 'package:appsmarketplace/core/features/cart/presentation/providers/cart_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:appsmarketplace/core/features/cart/presentation/pages/cart_page.dart';
+import 'package:appsmarketplace/core/features/cart/presentation/providers/cart_provider.dart';
 import 'package:appsmarketplace/core/services/auth_provider.dart';
+import 'package:appsmarketplace/core/providers/theme_provider.dart';
 import '../../../dashboard/presentation/providers/product_provider.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -15,6 +16,9 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
+  Timer? _debounce;
+  final TextEditingController _searchController = TextEditingController();
+
   String _formatPrice(num price) {
     return price
         .toStringAsFixed(0)
@@ -24,13 +28,9 @@ class _DashboardPageState extends State<DashboardPage> {
         );
   }
 
-  Timer? _debounce;
-  final TextEditingController _searchController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
-
     Future.microtask(() {
       context.read<ProductProvider>().fetchProducts();
     });
@@ -38,7 +38,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   void dispose() {
-    _debounce?.cancel(); // ✅ penting
+    _debounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -55,8 +55,16 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final product = context.watch<ProductProvider>();
+    final themeProvider = context.watch<ThemeProvider>();
+
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final isDark = themeProvider.isDark;
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,11 +78,15 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
 
         actions: [
+          // 🌙 DARK MODE TOGGLE
           IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async => await auth.logout(),
+            icon: Icon(isDark ? Icons.dark_mode : Icons.light_mode),
+            onPressed: () {
+              context.read<ThemeProvider>().toggle();
+            },
           ),
 
+          // 🛒 CART
           IconButton(
             icon: const Icon(Icons.shopping_cart),
             onPressed: () {
@@ -83,6 +95,12 @@ class _DashboardPageState extends State<DashboardPage> {
                 MaterialPageRoute(builder: (_) => const CartPage()),
               );
             },
+          ),
+
+          // 🚪 LOGOUT
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async => await auth.logout(),
           ),
         ],
       ),
@@ -94,11 +112,21 @@ class _DashboardPageState extends State<DashboardPage> {
           }
 
           if (product.hasError) {
-            return Center(child: Text(product.error ?? 'Error'));
+            return Center(
+              child: Text(
+                product.error ?? 'Error',
+                style: TextStyle(color: cs.onSurface),
+              ),
+            );
           }
 
           if (product.products.isEmpty) {
-            return const Center(child: Text('Tidak ada produk'));
+            return Center(
+              child: Text(
+                'Tidak ada produk',
+                style: TextStyle(color: cs.onSurface),
+              ),
+            );
           }
 
           return ListView(
@@ -114,9 +142,10 @@ class _DashboardPageState extends State<DashboardPage> {
                   },
                   decoration: InputDecoration(
                     hintText: 'Cari jersey...',
-                    prefixIcon: const Icon(Icons.search),
+                    hintStyle: TextStyle(color: theme.hintColor),
+                    prefixIcon: Icon(Icons.search, color: theme.hintColor),
                     filled: true,
-                    fillColor: Colors.grey.shade100,
+                    fillColor: cs.surface,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -125,7 +154,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               ),
 
-              // 🎯 BANNER (hanya kalau search kosong)
+              // 🎯 BANNER
               if (_searchController.text.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -159,6 +188,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     final p = product.products[index];
 
                     return Card(
+                      color: cs.surface,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -171,8 +201,10 @@ class _DashboardPageState extends State<DashboardPage> {
                             child: Image.network(
                               p.imageUrl,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  const Icon(Icons.image_not_supported),
+                              errorBuilder: (_, __, ___) => Icon(
+                                Icons.image_not_supported,
+                                color: theme.hintColor,
+                              ),
                             ),
                           ),
 
@@ -185,9 +217,10 @@ class _DashboardPageState extends State<DashboardPage> {
                                   p.name,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
+                                    color: cs.onSurface,
                                   ),
                                 ),
 
@@ -195,8 +228,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
                                 Text(
                                   'Rp ${_formatPrice(p.price)}',
-                                  style: const TextStyle(
-                                    color: Color(0xFF1565C0),
+                                  style: TextStyle(
+                                    color: cs.primary,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
                                   ),
