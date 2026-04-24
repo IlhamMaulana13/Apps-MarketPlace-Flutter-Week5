@@ -1,8 +1,7 @@
-import 'package:appsmarketplace/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:appsmarketplace/core/theme/app_colors.dart';
 
 class AppTheme {
-  // ── LIGHT ────────────────────────────────────────────────
   static ThemeData get light {
     return ThemeData(
       brightness: Brightness.light, // ← terang
@@ -16,24 +15,22 @@ class AppTheme {
         backgroundColor: AppColors.primary, // ← biru tua
         foregroundColor: Colors.white,
       ),
-      // ...
+
     );
   }
 
-  // ── DARK ─────────────────────────────────────────────────
   static ThemeData get dark {
     return ThemeData(
       brightness: Brightness.dark, // ← gelap
       colorScheme: ColorScheme.fromSeed(
         brightness: Brightness.dark,
-        primary: AppColors.accent, // ← biru MUDA (lebih kontras digelap)
+        primary: AppColors.accent, // ← biru muda
         surface: AppColors.darkSurface, // ← abu gelap
       ),
-      scaffoldBackgroundColor: AppColors.darkBackground, // ← hitam gelap
+      scaffoldBackgroundColor: AppColors.darkBackground, // ← hitam
       appBarTheme: AppBarTheme(
-        backgroundColor:
-            AppColors.darkSurface, // ← abu gelap (bukan hitam polos)
-        foregroundColor: AppColors.darkTextPrimary, // ← putih keabu
+        backgroundColor: AppColors.darkSurface, // ← abu gelap
+        foregroundColor: Colors.white,
       ),
       // ...
     );
