@@ -18,15 +18,19 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ProductProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: MaterialApp(
-        title: 'My App',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light, // ← dipakai saat ThemeMode.light
-        darkTheme: AppTheme.dark, // ← dipakai saat ThemeMode.dark
-        themeMode: ThemeProvider.themeMode,
-        // ↑ berubah saat toggle() dipanggil → seluruh app ikut
-        initialRoute: AppRouter.splash,
-        routes: AppRouter.routes,
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'My App',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light, // ← dipakai saat ThemeMode.light
+            darkTheme: AppTheme.dark, // ← dipakai saat ThemeMode.dark
+            themeMode: themeProvider.themeMode,
+            // ↑ berubah saat toggle() dipanggil → seluruh app ikut
+            initialRoute: AppRouter.splash,
+            routes: AppRouter.routes,
+          );
+        },
       ),
     );
   }
