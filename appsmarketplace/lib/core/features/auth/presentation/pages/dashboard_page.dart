@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:appsmarketplace/core/services/secure_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -28,11 +29,21 @@ class _DashboardPageState extends State<DashboardPage> {
         );
   }
 
+  bool _loaded = false;
+
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      context.read<ProductProvider>().fetchProducts();
+
+    Future.microtask(() async {
+      final token = await SecureStorage.getToken();
+
+      if (token != null && !_loaded) {
+        _loaded = true;
+        context.read<ProductProvider>().fetchProducts();
+      } else {
+        print("TOKEN BELUM SIAP ❌");
+      }
     });
   }
 

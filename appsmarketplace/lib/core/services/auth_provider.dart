@@ -231,6 +231,11 @@ class AuthProvider extends ChangeNotifier {
 
       final backendToken = response.data['data']['access_token'];
 
+      print("TOKEN BACKEND DISIMPAN: $backendToken");
+
+      final checkToken = await SecureStorage.getToken();
+      print("TOKEN CEK STORAGE: $checkToken");
+
       _backendToken = backendToken;
       await SecureStorage.saveToken(backendToken);
 

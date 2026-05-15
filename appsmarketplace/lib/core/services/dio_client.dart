@@ -1,6 +1,7 @@
 import 'package:appsmarketplace/core/constants/api_constants.dart';
 import 'package:appsmarketplace/core/services/secure_storage.dart';
 import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class DioClient {
@@ -26,21 +27,21 @@ class DioClient {
         onRequest: (options, handler) async {
           debugPrint('[REQUEST] ${options.method} ${options.path}');
 
-          // ❌ JANGAN inject token ke auth endpoint
           final isAuthEndpoint = options.path.contains('/auth/');
 
           if (!isAuthEndpoint) {
             final token = await SecureStorage.getToken();
-            if (token != null) {
+
+            debugPrint('TOKEN DIPAKAI DI DIO: $token');
+
+            if (token != null && token.isNotEmpty) {
               options.headers['Authorization'] = 'Bearer $token';
+            } else {
+              debugPrint('TOKEN NULL ❌');
             }
           }
 
           handler.next(options);
-        },
-        onError: (error, handler) async {
-          debugPrint('[ERROR] ${error.response?.statusCode}');
-          handler.next(error);
         },
       ),
     );

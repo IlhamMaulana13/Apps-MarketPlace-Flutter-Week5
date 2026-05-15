@@ -51,6 +51,7 @@ dependencies:
   equatable: ^2.0.5 # Value equality untuk model
   email_validator: ^3.0.0 # Validasi format email
   flutter_svg: ^2.0.10 # Google logo SVG
+  shared_preferences: ^2.2.2
 
 dev_dependencies:
   flutter_test:

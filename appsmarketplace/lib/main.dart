@@ -1,6 +1,8 @@
 import 'package:appsmarketplace/core/features/cart/presentation/providers/cart_provider.dart';
 import 'package:appsmarketplace/core/features/dashboard/presentation/providers/product_provider.dart';
 import 'package:appsmarketplace/core/providers/theme_provider.dart';
+import 'package:appsmarketplace/core/services/secure_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
@@ -12,6 +14,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await FirebaseAuth.instance.signOut();
+  await SecureStorage.deleteToken();
 
   runApp(
     MultiProvider(

@@ -1,14 +1,14 @@
-import 'package:appsmarketplace/core/services/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import 'package:appsmarketplace/core/services/auth_provider.dart';
+import 'package:appsmarketplace/core/services/secure_storage.dart';
 
 // Import Pages
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/Register_page.dart';
 import '../features/auth/presentation/pages/Verify_email_page.dart';
 import '../features/auth/presentation/pages/dashboard_page.dart';
-
-import '../services/secure_storage.dart';
 
 class AppRouter {
   static const String splash = '/';
@@ -23,35 +23,39 @@ class AppRouter {
     register: (_) => const RegisterPage(),
     verifyEmail: (_) => const VerifyEmailPage(),
 
-    // Dashboard dibungkus AuthGuard (Si Satpam)
+    // Dashboard tetap dijaga AuthGuard
     dashboard: (_) => const AuthGuard(child: DashboardPage()),
   };
 }
 
-// --- TULIS KODE INI DI BAWAH CLASS APPROUTER (Masih di file yang sama) ---
-
+//
+// ================= AUTH GUARD =================
+//
 class AuthGuard extends StatelessWidget {
   final Widget child;
   const AuthGuard({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
-    // Memantau status login dari AuthProvider
-    // Status ini didapat setelah login sukses atau cek token di awal
     final status = context.watch<AuthProvider>().status;
 
     return switch (status) {
-      AuthStatus.authenticated => child, // Jika OK, tampilkan Dashboard
-      AuthStatus.emailNotVerified =>
-        const VerifyEmailPage(), // Jika login tapi belum klik link email
-      _ => const LoginPage(), // Jika belum login, tendang ke Login Page
+      AuthStatus.authenticated => child,
+      AuthStatus.emailNotVerified => const VerifyEmailPage(),
+      AuthStatus.loading => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      _ => const LoginPage(),
     };
   }
 }
 
-// SplashPage: cek token tersimpan, redirect otomatis
+//
+// ================= SPLASH PAGE =================
+//
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
+
   @override
   State<SplashPage> createState() => _SplashPageState();
 }
@@ -64,15 +68,27 @@ class _SplashPageState extends State<SplashPage> {
   }
 
   Future<void> _checkAuth() async {
-    await Future.delayed(const Duration(seconds: 2)); // Animasi splash
+    await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
 
-    final token = await SecureStorage.getToken();
-    final route = token != null ? AppRouter.dashboard : AppRouter.login;
-    Navigator.pushReplacementNamed(context, route);
+    final auth = context.read<AuthProvider>();
+
+    final firebaseUser = auth.firebaseUser;
+    final backendToken = await SecureStorage.getToken();
+
+    debugPrint("SPLASH CHECK:");
+    debugPrint("FirebaseUser: $firebaseUser");
+    debugPrint("BackendToken: $backendToken");
+
+    if (firebaseUser != null && backendToken != null) {
+      Navigator.pushReplacementNamed(context, AppRouter.dashboard);
+    } else {
+      Navigator.pushReplacementNamed(context, AppRouter.login);
+    }
   }
 
   @override
-  Widget build(BuildContext context) =>
-      const Scaffold(body: Center(child: CircularProgressIndicator()));
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+  }
 }

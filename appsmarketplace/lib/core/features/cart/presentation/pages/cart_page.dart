@@ -15,12 +15,10 @@ class _CartPageState extends State<CartPage> {
   bool isCheckingOut = false;
 
   String formatPrice(num price) {
-    return price
-        .toStringAsFixed(0)
-        .replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]}.',
-        );
+    return price.toStringAsFixed(0).replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]}.',
+    );
   }
 
   @override
@@ -37,11 +35,10 @@ class _CartPageState extends State<CartPage> {
       isCheckingOut = true;
     });
 
-    // ⏳ simulasi loading
     await Future.delayed(const Duration(seconds: 1));
 
-    // 🧠 kosongkan cart (tanpa backend)
     final cart = context.read<CartProvider>();
+
     cart.items.clear();
     cart.totalPrice = 0;
     cart.notifyListeners();
@@ -52,7 +49,6 @@ class _CartPageState extends State<CartPage> {
 
     if (!mounted) return;
 
-    // 🎉 success message
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text("Checkout berhasil 🎉"),
@@ -65,28 +61,65 @@ class _CartPageState extends State<CartPage> {
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
 
+    // LOADING
     if (cart.isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
 
+    // EMPTY CART
     if (cart.items.isEmpty) {
-      return const Scaffold(body: Center(child: Text("Keranjang kosong")));
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text("Keranjang"),
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.shopping_cart_outlined,
+                size: 90,
+                color: Colors.grey,
+              ),
+              SizedBox(height: 16),
+              Text(
+                "Keranjang kosong",
+                style: TextStyle(fontSize: 18),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Keranjang")),
+      backgroundColor: const Color(0xFFF5F5F5),
+
+      appBar: AppBar(
+        title: const Text("Keranjang"),
+        centerTitle: true,
+      ),
 
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
+              padding: const EdgeInsets.only(top: 8, bottom: 12),
               itemCount: cart.items.length,
               itemBuilder: (context, i) {
                 final item = cart.items[i];
                 final product = item['product'];
 
                 final sizeFromApi = item['size'] ?? "M";
-                selectedSizes.putIfAbsent(item['ID'], () => sizeFromApi);
+
+                selectedSizes.putIfAbsent(
+                  item['ID'],
+                  () => sizeFromApi,
+                );
 
                 return Container(
                   margin: const EdgeInsets.symmetric(
@@ -95,29 +128,34 @@ class _CartPageState extends State<CartPage> {
                   ),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
                     color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        blurRadius: 6,
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
                         color: Colors.black.withOpacity(0.05),
                       ),
                     ],
                   ),
+
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // IMAGE
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                         child: Image.network(
                           product['image_url'],
-                          width: 70,
-                          height: 70,
+                          width: 90,
+                          height: 90,
                           fit: BoxFit.cover,
                         ),
                       ),
 
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 14),
 
+                      // CONTENT
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,86 +166,140 @@ class _CartPageState extends State<CartPage> {
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
+                                fontSize: 15,
                               ),
                             ),
 
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 6),
 
                             Text(
                               "Rp ${formatPrice(product['price'])}",
                               style: const TextStyle(
                                 color: Colors.blue,
                                 fontWeight: FontWeight.bold,
+                                fontSize: 15,
                               ),
                             ),
 
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 10),
 
-                            DropdownButton<String>(
-                              value: selectedSizes[item['ID']],
-                              isExpanded: true,
-                              items: ["S", "M", "L", "XL"]
-                                  .map(
-                                    (e) => DropdownMenuItem(
-                                      value: e,
-                                      child: Text(e),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (val) async {
-                                if (val == null) return;
+                            // SIZE
+                            Container(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 10),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
+                              child: DropdownButton<String>(
+                                value: selectedSizes[item['ID']],
+                                isExpanded: true,
+                                underline: const SizedBox(),
+                                items: ["S", "M", "L", "XL"]
+                                    .map(
+                                      (e) => DropdownMenuItem(
+                                        value: e,
+                                        child: Text(e),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (val) async {
+                                  if (val == null) return;
 
-                                setState(() {
-                                  selectedSizes[item['ID']] = val;
-                                });
+                                  setState(() {
+                                    selectedSizes[item['ID']] = val;
+                                  });
 
-                                await context.read<CartProvider>().updateItem(
-                                  item['ID'],
-                                  item['quantity'],
-                                  val,
-                                );
-                              },
+                                  await context
+                                      .read<CartProvider>()
+                                      .updateItem(
+                                        item['ID'],
+                                        item['quantity'],
+                                        val,
+                                      );
+                                },
+                              ),
                             ),
 
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 10),
 
+                            // QTY
                             Row(
                               children: [
-                                IconButton(
-                                  icon: const Icon(Icons.remove),
-                                  onPressed: () {
-                                    context.read<CartProvider>().updateItem(
-                                      item['ID'],
-                                      item['quantity'] - 1,
-                                      selectedSizes[item['ID']],
-                                    );
-                                  },
+                                Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.grey.shade200,
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(Icons.remove, size: 18),
+                                    onPressed: () {
+                                      final qty =
+                                          item['quantity'] - 1;
+
+                                      // SESUAI MODUL
+                                      if (qty <= 0) {
+                                        context
+                                            .read<CartProvider>()
+                                            .removeItem(item['ID']);
+                                      } else {
+                                        context
+                                            .read<CartProvider>()
+                                            .updateItem(
+                                              item['ID'],
+                                              qty,
+                                              selectedSizes[item['ID']],
+                                            );
+                                      }
+                                    },
+                                  ),
                                 ),
 
-                                Text("${item['quantity']}"),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                  ),
+                                  child: Text(
+                                    "${item['quantity']}",
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
 
-                                IconButton(
-                                  icon: const Icon(Icons.add),
-                                  onPressed: () {
-                                    context.read<CartProvider>().updateItem(
-                                      item['ID'],
-                                      item['quantity'] + 1,
-                                      selectedSizes[item['ID']],
-                                    );
-                                  },
+                                Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.grey.shade200,
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(Icons.add, size: 18),
+                                    onPressed: () {
+                                      context
+                                          .read<CartProvider>()
+                                          .updateItem(
+                                            item['ID'],
+                                            item['quantity'] + 1,
+                                            selectedSizes[item['ID']],
+                                          );
+                                    },
+                                  ),
                                 ),
 
                                 const Spacer(),
 
                                 IconButton(
                                   icon: const Icon(
-                                    Icons.delete,
+                                    Icons.delete_outline,
                                     color: Colors.red,
                                   ),
                                   onPressed: () {
-                                    context.read<CartProvider>().removeItem(
-                                      item['ID'],
-                                    );
+                                    context
+                                        .read<CartProvider>()
+                                        .removeItem(item['ID']);
                                   },
                                 ),
                               ],
@@ -222,47 +314,87 @@ class _CartPageState extends State<CartPage> {
             ),
           ),
 
-          // 💰 TOTAL + CHECKOUT
+          // TOTAL SECTION
           Container(
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: Colors.grey)),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text("Total"),
-                    Text(
-                      "Rp ${formatPrice(cart.totalPrice)}",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: isCheckingOut ? null : _simulateCheckout,
-                    child: isCheckingOut
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text("Checkout"),
-                  ),
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: 12,
+                  offset: const Offset(0, -2),
+                  color: Colors.black.withOpacity(0.08),
                 ),
               ],
+            ),
+
+            child: SafeArea(
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment:
+                        MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Total",
+                        style: TextStyle(
+                          fontSize: 16,
+                        ),
+                      ),
+
+                      Text(
+                        "Rp ${formatPrice(cart.totalPrice)}",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(14),
+                        ),
+                      ),
+
+                      onPressed:
+                          isCheckingOut ? null : _simulateCheckout,
+
+                      child: isCheckingOut
+                          ? const SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              "Checkout",
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
