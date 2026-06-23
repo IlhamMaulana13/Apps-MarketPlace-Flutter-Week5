@@ -1,3 +1,4 @@
+import 'package:appsmarketplace/core/features/auth/presentation/pages/Checkout_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:appsmarketplace/core/features/cart/presentation/providers/cart_provider.dart';
@@ -31,28 +32,11 @@ class _CartPageState extends State<CartPage> {
   }
 
   Future<void> _simulateCheckout() async {
-    setState(() {
-      isCheckingOut = true;
-    });
-
-    await Future.delayed(const Duration(seconds: 1));
-
-    final cart = context.read<CartProvider>();
-
-    cart.items.clear();
-    cart.totalPrice = 0;
-    cart.notifyListeners();
-
-    setState(() {
-      isCheckingOut = false;
-    });
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Checkout berhasil 🎉"),
-        backgroundColor: Colors.green,
+    // Navigasi ke halaman CheckoutPage
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CheckoutPage(), // Pastikan Anda sudah mengimport CheckoutPage
       ),
     );
   }

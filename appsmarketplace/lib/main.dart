@@ -1,6 +1,7 @@
 import 'package:appsmarketplace/core/features/cart/presentation/providers/cart_provider.dart';
 import 'package:appsmarketplace/core/features/dashboard/presentation/providers/product_provider.dart';
 import 'package:appsmarketplace/core/providers/theme_provider.dart';
+import 'package:appsmarketplace/core/services/global_institute_pay_service.dart';
 import 'package:appsmarketplace/core/services/secure_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FirebaseAuth.instance.signOut();
   await SecureStorage.deleteToken();
+  await GlobalInstitutePayService().init();
 
   runApp(
     MultiProvider(
