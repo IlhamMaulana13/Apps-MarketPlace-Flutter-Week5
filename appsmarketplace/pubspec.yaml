@@ -2,7 +2,7 @@ name: appsmarketplace
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -46,11 +46,14 @@ dependencies:
 
   # Local Storage (simpan token)
   flutter_secure_storage: ^9.2.2
-  
+
   # Utilities
   equatable: ^2.0.5 # Value equality untuk model
   email_validator: ^3.0.0 # Validasi format email
   flutter_svg: ^2.0.10 # Google logo SVG
+
+  url_launcher: ^6.3.1
+  app_links: ^6.3.2
 
 dev_dependencies:
   flutter_test:
@@ -68,7 +71,6 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
