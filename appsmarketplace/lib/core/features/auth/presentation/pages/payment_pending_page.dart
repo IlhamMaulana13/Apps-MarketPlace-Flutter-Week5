@@ -40,14 +40,14 @@ class _PaymentPendingPageState extends State<PaymentPendingPage>
     // Tangani callback jika aplikasi Toko Jersey sempat tertutup (Cold Start)
     final pending = GlobalInstitutePayService().consumePendingCallback();
     if (pending != null && pending.isSuccess) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _onPaymentSuccess());
+      WidgetsBinding.instance.addPostFrameCallback((_) => _onPaymentSuccess(pending));
     }
 
     // Dengarkan balasan (callback) dari e-money saat aplikasi berjalan
     _callbackSub = GlobalInstitutePayService().onCallback.listen((data) {
       if (!mounted) return;
       if (data.isSuccess) {
-        _onPaymentSuccess();
+        _onPaymentSuccess(data);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -77,62 +77,60 @@ class _PaymentPendingPageState extends State<PaymentPendingPage>
 
     final uri = Uri.parse(deeplinkUrl);
 
-    // Di dalam fungsi _launchGlobalInstitutePay
-    if (!await canLaunchUrl(uri)) {
-      // Tambahkan dialog jika E-Money belum terinstall
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text("Aplikasi E-Money tidak ditemukan"),
-          content: const Text(
-            "Silakan install Dompet Kampus untuk melanjutkan pembayaran.",
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text("OK"),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Coba buka aplikasi E-Money (dompetkampus://)
+    // Langsung coba buka — dialog baru tampil kalau benar-benar gagal
     try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-      setState(() => _payLaunched = true);
-    } catch (e) {
-      // Jika error atau aplikasi E-Money belum terinstall
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Gagal membuka E-Money. Pastikan aplikasi Dompet Kampus sudah terinstall.',
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
+
+      if (launched) {
+        setState(() => _payLaunched = true);
+      } else {
+        _showAppNotFoundDialog();
+      }
+    } catch (_) {
+      if (!mounted) return;
+      _showAppNotFoundDialog();
     }
   }
 
-  // Fungsi yang dipanggil saat pembayaran di E-Money sukses dan kembali ke Toko
-  void _onPaymentSuccess() {
-    // Anda bisa mengganti ini dengan navigasi ke halaman "Pesanan Berhasil"
-    // Contoh: Navigator.pushReplacementNamed(context, '/order-success');
+  void _showAppNotFoundDialog() {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Aplikasi E-Money tidak ditemukan'),
+        content: const Text(
+          'Aplikasi Dompet Kampus belum terinstall di perangkat Anda. '
+          'Silakan install terlebih dahulu untuk melanjutkan pembayaran.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _onPaymentSuccess(PaymentCallbackData data) {
+    if (!mounted) return;
+
+    final amountText = data.amount != null
+        ? 'Rp ${data.amount!.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}'
+        : 'Rp ${widget.totalAmount.toInt()}';
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Hore! Pembayaran Berhasil! 🎉'),
+      SnackBar(
+        content: Text('Pembayaran $amountText berhasil! 🎉'),
         backgroundColor: Colors.green,
+        duration: const Duration(seconds: 3),
       ),
     );
 
-    // Kembali ke beranda setelah sukses
     Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        Navigator.popUntil(context, (route) => route.isFirst);
-      }
+      if (!mounted) return;
+      Navigator.popUntil(context, (route) => route.isFirst);
     });
   }
 

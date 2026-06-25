@@ -94,6 +94,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
 
       await user.sendEmailVerification();
 
+      if (!mounted) return;
       setState(() {
         _resendCooldown = true;
         _countdown = 60;
@@ -109,10 +110,12 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
 
         if (_countdown <= 0) {
           t.cancel();
+          if (!mounted) return;
           setState(() => _resendCooldown = false);
         }
       });
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Email verifikasi dikirim ulang')),
       );

@@ -11,31 +11,32 @@ class CheckoutPage extends StatefulWidget {
 }
 
 class _CheckoutPageState extends State<CheckoutPage> {
-  // Set default metode pembayaran ke E-Money (Global Institute Pay)
   String selectedPaymentMethod = 'global_institute_pay';
   bool isProcessing = false;
 
-  // Fungsi untuk memformat angka menjadi format Rupiah
   String formatPrice(num price) {
-    return price.toStringAsFixed(0).replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
-    );
+    return price
+        .toStringAsFixed(0)
+        .replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (m) => '${m[1]}.',
+        );
   }
 
-  // Fungsi yang dipanggil saat tombol "Bayar Sekarang" ditekan
-  void _processPayment() {
-    setState(() {
-      isProcessing = true;
-    });
+  Future<void> _processPayment() async {
+    if (!mounted) return;
+    setState(() => isProcessing = true);
+
+    if (selectedPaymentMethod == 'cod') {
+      await _showCodSuccessDialog();
+      if (!mounted) return;
+      setState(() => isProcessing = false);
+      return;
+    }
 
     final cart = context.read<CartProvider>();
-    
-    // Kita buat dummy Order ID menggunakan waktu saat ini
-    // Di aplikasi nyata yang sudah utuh, ini biasanya didapat dari respon API Backend
     final orderId = DateTime.now().millisecondsSinceEpoch;
 
-    // Langsung arahkan ke halaman Payment Pending yang akan membuka aplikasi E-Money
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -48,6 +49,75 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
+  Future<void> _showCodSuccessDialog() async {
+    final cart = context.read<CartProvider>();
+    final total = formatPrice(cart.totalPrice);
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 72,
+              height: 72,
+              decoration: const BoxDecoration(
+                color: Color(0xFF4CAF50),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check, color: Colors.white, size: 44),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Pesanan Berhasil!',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Rp $total',
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF4CAF50),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Pembayaran COD — bayar saat barang tiba.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4CAF50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.popUntil(context, (route) => route.isFirst);
+                },
+                child: const Text(
+                  'Kembali ke Beranda',
+                  style: TextStyle(color: Colors.white, fontSize: 15),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Membaca data keranjang
@@ -55,10 +125,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text("Checkout"),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text("Checkout"), centerTitle: true),
       body: Column(
         children: [
           Expanded(
@@ -103,7 +170,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                               ),
                               Text(
                                 "Rp ${formatPrice(product['price'] * item['quantity'])}",
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
@@ -140,24 +209,37 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             "Global Institute Pay",
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          subtitle: const Text("Bayar otomatis via aplikasi E-Money"),
-                          secondary: const Icon(Icons.account_balance_wallet, color: Colors.blue),
+                          subtitle: const Text(
+                            "Bayar otomatis via aplikasi E-Money",
+                          ),
+                          secondary: const Icon(
+                            Icons.account_balance_wallet,
+                            color: Colors.blue,
+                          ),
                           value: 'global_institute_pay',
                           groupValue: selectedPaymentMethod,
                           onChanged: (value) {
+                            if (!mounted) return;
                             setState(() {
                               selectedPaymentMethod = value!;
                             });
                           },
                         ),
                         const Divider(height: 1),
-                        // Opsi Tambahan (Bisa dihiraukan jika hanya fokus ke E-Money)
                         RadioListTile<String>(
-                          title: const Text("Transfer Bank (Manual)"),
-                          secondary: const Icon(Icons.account_balance),
-                          value: 'bank_transfer',
+                          title: const Text(
+                            'COD (Bayar di Tempat)',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: const Text('Bayar tunai saat barang tiba'),
+                          secondary: const Icon(
+                            Icons.delivery_dining,
+                            color: Colors.green,
+                          ),
+                          value: 'cod',
                           groupValue: selectedPaymentMethod,
                           onChanged: (value) {
+                            if (!mounted) return;
                             setState(() {
                               selectedPaymentMethod = value!;
                             });
@@ -176,7 +258,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
               boxShadow: [
                 BoxShadow(
                   blurRadius: 12,

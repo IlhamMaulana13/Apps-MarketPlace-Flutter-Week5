@@ -1,99 +1,90 @@
 import 'dart:async';
 import 'package:app_links/app_links.dart';
 
-// 1. Model Data Callback
-// Objek sederhana untuk menangkap data status dari aplikasi E-Money
 class PaymentCallbackData {
-  final String status; // Contoh: 'success', 'failed', 'cancelled'
-  final String? reference; // Nomor invoice/referensi
-  final String? transactionId; // ID transaksi dari E-Money
+  final String status;      // 'success', 'failed', 'cancelled'
+  final double? amount;     // Jumlah yang dikonfirmasi e-money
+  final String? reference;  // Nomor referensi / invoice
 
   const PaymentCallbackData({
     required this.status,
+    this.amount,
     this.reference,
-    this.transactionId,
   });
 
-  // Helper agar mudah dicek
   bool get isSuccess => status == 'success';
 }
 
-// 2. Service Utama Pembayaran
 class GlobalInstitutePayService {
-  // Singleton pattern: Hanya ada 1 instance service yang hidup di dalam aplikasi
   static final GlobalInstitutePayService _instance =
       GlobalInstitutePayService._();
   factory GlobalInstitutePayService() => _instance;
   GlobalInstitutePayService._();
 
-  // Broadcast stream agar UI bisa 'mendengarkan' perubahan status
   final _callbackController = StreamController<PaymentCallbackData>.broadcast();
   Stream<PaymentCallbackData> get onCallback => _callbackController.stream;
 
-  // Menangani cold start (jika app Toko Jersey sempat tertutup saat user di E-Money)
   PaymentCallbackData? _pendingCallback;
 
   PaymentCallbackData? consumePendingCallback() {
     final data = _pendingCallback;
-    _pendingCallback = null; // Hapus setelah dikonsumsi UI
+    _pendingCallback = null;
     return data;
   }
 
-  // 3. Inisialisasi Listener URL Masuk
-  // Panggil ini di main.dart sebelum runApp()
+  // Panggil di main.dart sebelum runApp()
   Future<void> init() async {
     final appLinks = AppLinks();
 
-    // Skenario 1: Aplikasi baru dibuka melalui link balasan (Cold Start)
+    // Skenario cold start: app dibuka langsung dari link balasan e-money
     try {
       final uri = await appLinks.getInitialLink();
       if (uri != null) _handleUri(uri, isColdStart: true);
     } catch (_) {}
 
-    // Skenario 2: Aplikasi sudah berjalan di background dan menerima link balasan
+    // Skenario warm start: app sudah berjalan di background
     appLinks.uriLinkStream.listen(_handleUri);
   }
 
-  // 4. Memproses Link Balasan (Callback)
+  // Proses link balasan dari e-money:
+  // appsmarketplace://payment-result?status=success&amount=150000
   void _handleUri(Uri uri, {bool isColdStart = false}) {
-    print("DEEPLINK_DEBUG: Menerima callback: $uri");
-    // Pastikan skema dan host sesuai dengan konfigurasi Android/iOS toko Anda
-    if (uri.scheme == 'appsmarketplace' && uri.host == 'payment-callback') {
+    if (uri.scheme == 'appsmarketplace' && uri.host == 'payment-result') {
+      final amountStr = uri.queryParameters['amount'];
       final data = PaymentCallbackData(
         status: uri.queryParameters['status'] ?? 'unknown',
+        amount: amountStr != null ? double.tryParse(amountStr) : null,
         reference: uri.queryParameters['reference'],
-        transactionId: uri.queryParameters['transaction_id'],
       );
 
       if (isColdStart) {
         _pendingCallback = data;
       }
 
-      // Kirim data ke UI yang sedang mendengarkan
       _callbackController.add(data);
     }
   }
 
-  // 5. Membuat URL Pembayaran ke E-Money
+  // Bangun deeplink ke e-money:
+  // dompetkampus://pay?merchant_id=X&merchant_name=Y&amount=Z
+  //   &description=D&reference=R&callback=appsmarketplace://payment-result
   static String buildDeeplinkUrl({
     required int orderId,
     required double amount,
     String? description,
   }) {
     final uri = Uri(
-      scheme:
-          'dompetkampus', // Harus sama dengan intent filter aplikasi E-Money Anda
+      scheme: 'dompetkampus',
       host: 'pay',
       queryParameters: {
         'merchant_id': 'JERSEY_STORE_01',
         'merchant_name': 'Toko Jersey AppsMarketplace',
-        'amount': amount.toInt().toString(), // Pastikan angka bulat tanpa koma
+        'amount': amount.toInt().toString(),
         'description': (description != null && description.isNotEmpty)
             ? description
             : 'Order #$orderId',
         'reference': 'INV-$orderId',
-        'callback':
-            'appsmarketplace://payment-callback', // Alamat balasan toko kita
+        'callback': 'appsmarketplace://payment-result',
       },
     );
     return uri.toString();

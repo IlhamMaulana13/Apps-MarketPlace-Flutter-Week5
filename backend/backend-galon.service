@@ -1,0 +1,18 @@
+[Unit]
+Description=Backend Galon Go API Server
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/Project-UAS-E-Money/backend
+ExecStart=/root/Project-UAS-E-Money/backend/app
+Restart=always
+RestartSec=5
+EnvironmentFile=/root/Project-UAS-E-Money/backend/.env
+
+# Bersihkan port sebelum start
+ExecStartPre=/bin/bash -c "fuser -k 8080/tcp 2>/dev/null || true"
+
+[Install]
+WantedBy=multi-user.target
