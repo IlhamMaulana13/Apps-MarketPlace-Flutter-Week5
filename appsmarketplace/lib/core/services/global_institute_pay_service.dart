@@ -21,7 +21,8 @@ class PaymentCallbackData {
 // 2. Service Utama Pembayaran
 class GlobalInstitutePayService {
   // Singleton pattern: Hanya ada 1 instance service yang hidup di dalam aplikasi
-  static final GlobalInstitutePayService _instance = GlobalInstitutePayService._();
+  static final GlobalInstitutePayService _instance =
+      GlobalInstitutePayService._();
   factory GlobalInstitutePayService() => _instance;
   GlobalInstitutePayService._();
 
@@ -55,6 +56,7 @@ class GlobalInstitutePayService {
 
   // 4. Memproses Link Balasan (Callback)
   void _handleUri(Uri uri, {bool isColdStart = false}) {
+    print("DEEPLINK_DEBUG: Menerima callback: $uri");
     // Pastikan skema dan host sesuai dengan konfigurasi Android/iOS toko Anda
     if (uri.scheme == 'appsmarketplace' && uri.host == 'payment-callback') {
       final data = PaymentCallbackData(
@@ -66,7 +68,7 @@ class GlobalInstitutePayService {
       if (isColdStart) {
         _pendingCallback = data;
       }
-      
+
       // Kirim data ke UI yang sedang mendengarkan
       _callbackController.add(data);
     }
@@ -79,7 +81,8 @@ class GlobalInstitutePayService {
     String? description,
   }) {
     final uri = Uri(
-      scheme: 'dompetkampus', // Harus sama dengan intent filter aplikasi E-Money Anda
+      scheme:
+          'dompetkampus', // Harus sama dengan intent filter aplikasi E-Money Anda
       host: 'pay',
       queryParameters: {
         'merchant_id': 'JERSEY_STORE_01',
@@ -89,7 +92,8 @@ class GlobalInstitutePayService {
             ? description
             : 'Order #$orderId',
         'reference': 'INV-$orderId',
-        'callback': 'appsmarketplace://payment-callback', // Alamat balasan toko kita
+        'callback':
+            'appsmarketplace://payment-callback', // Alamat balasan toko kita
       },
     );
     return uri.toString();
