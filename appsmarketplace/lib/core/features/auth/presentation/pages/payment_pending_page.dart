@@ -1,7 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:appsmarketplace/core/services/global_institute_pay_service.dart';
+import 'package:appsmarketplace/core/services/notification_service.dart';
+import 'package:appsmarketplace/core/features/cart/presentation/providers/cart_provider.dart';
+import 'transaction_success_page.dart';
 
 class PaymentPendingPage extends StatefulWidget {
   final int orderId;
@@ -27,23 +31,23 @@ class _PaymentPendingPageState extends State<PaymentPendingPage>
   @override
   void initState() {
     super.initState();
-    // Daftarkan observer agar aplikasi tahu saat user kembali dari background
     WidgetsBinding.instance.addObserver(this);
 
-    // Otomatis buka aplikasi e-money sesaat setelah halaman dirender
     if (widget.paymentMethod == 'global_institute_pay') {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => _launchGlobalInstitutePay(),
       );
     }
 
-    // Tangani callback jika aplikasi Toko Jersey sempat tertutup (Cold Start)
+    // Cold start: app dibuka dari callback E-Money saat tertutup
     final pending = GlobalInstitutePayService().consumePendingCallback();
     if (pending != null && pending.isSuccess) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _onPaymentSuccess(pending));
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _onPaymentSuccess(pending),
+      );
     }
 
-    // Dengarkan balasan (callback) dari e-money saat aplikasi berjalan
+    // Warm start: app di background, E-Money kirim callback
     _callbackSub = GlobalInstitutePayService().onCallback.listen((data) {
       if (!mounted) return;
       if (data.isSuccess) {
@@ -61,27 +65,24 @@ class _PaymentPendingPageState extends State<PaymentPendingPage>
 
   @override
   void dispose() {
-    // Wajib: Bersihkan listener agar tidak terjadi memory leak
     _callbackSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
-  // Fungsi untuk merangkai URL dan meluncurkan aplikasi E-Money
   Future<void> _launchGlobalInstitutePay() async {
     final deeplinkUrl = GlobalInstitutePayService.buildDeeplinkUrl(
       orderId: widget.orderId,
       amount: widget.totalAmount,
-      description: "Pembelian Jersey",
+      description: 'Pembelian Jersey',
     );
 
     final uri = Uri.parse(deeplinkUrl);
 
-    // Langsung coba buka — dialog baru tampil kalau benar-benar gagal
     try {
-      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final launched =
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!mounted) return;
-
       if (launched) {
         setState(() => _payLaunched = true);
       } else {
@@ -113,25 +114,35 @@ class _PaymentPendingPageState extends State<PaymentPendingPage>
     );
   }
 
-  void _onPaymentSuccess(PaymentCallbackData data) {
+  Future<void> _onPaymentSuccess(PaymentCallbackData data) async {
     if (!mounted) return;
 
-    final amountText = data.amount != null
-        ? 'Rp ${data.amount!.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}'
-        : 'Rp ${widget.totalAmount.toInt()}';
+    final confirmedAmount = data.amount ?? widget.totalAmount;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Pembayaran $amountText berhasil! 🎉'),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 3),
-      ),
+    // 1. Kosongkan keranjang belanja
+    context.read<CartProvider>().clearLocal();
+
+    // 2. Tampilkan notifikasi push
+    await NotificationService().showPaymentSuccess(
+      amount: confirmedAmount,
+      reference: data.reference,
+      transactionId: data.transactionId,
     );
 
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      Navigator.popUntil(context, (route) => route.isFirst);
-    });
+    if (!mounted) return;
+
+    // 3. Navigasi ke halaman status transaksi
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TransactionSuccessPage(
+          amount: confirmedAmount,
+          reference: data.reference,
+          transactionId: data.transactionId,
+          paymentMethod: 'Global Institute Pay',
+        ),
+      ),
+    );
   }
 
   @override

@@ -2,14 +2,16 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 
 class PaymentCallbackData {
-  final String status;      // 'success', 'failed', 'cancelled'
-  final double? amount;     // Jumlah yang dikonfirmasi e-money
-  final String? reference;  // Nomor referensi / invoice
+  final String status;         // 'success', 'failed', 'cancelled'
+  final double? amount;        // Jumlah yang dikonfirmasi e-money
+  final String? reference;     // Nomor referensi / invoice
+  final String? transactionId; // ID transaksi dari e-money (DKGxxx)
 
   const PaymentCallbackData({
     required this.status,
     this.amount,
     this.reference,
+    this.transactionId,
   });
 
   bool get isSuccess => status == 'success';
@@ -55,6 +57,7 @@ class GlobalInstitutePayService {
         status: uri.queryParameters['status'] ?? 'unknown',
         amount: amountStr != null ? double.tryParse(amountStr) : null,
         reference: uri.queryParameters['reference'],
+        transactionId: uri.queryParameters['transaction_id'],
       );
 
       if (isColdStart) {

@@ -61,4 +61,10 @@ class CartProvider extends ChangeNotifier {
 
     notifyListeners();
   }
+
+  void clearLocal() {
+    items = [];
+    totalPrice = 0;
+    notifyListeners();
+  }
 }
