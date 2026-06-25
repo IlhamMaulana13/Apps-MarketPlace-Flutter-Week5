@@ -204,11 +204,8 @@ class AuthProvider extends ChangeNotifier {
       }
 
       await user.reload();
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      final token = await user.getIdToken();
-      await user.reload();
-      final refreshedToken = await user.getIdToken();
+      // Force refresh agar token JWT memuat email_verified terbaru dari server
+      final token = await user.getIdToken(true);
 
       print("TOKEN READY: $token");
 

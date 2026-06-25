@@ -19,6 +19,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
   Timer? _timer;
   bool _resendCooldown = false;
   int _countdown = 60;
+  bool _isChecking = false;
 
   @override
   void initState() {
@@ -32,44 +33,55 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
     super.dispose();
   }
 
-  // ================= POLLING FIXED =================
   void _startPolling() {
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+      if (_isChecking) return;
       try {
-        final authProvider = context.read<auth_provider.AuthProvider>();
-
         final user = FirebaseAuth.instance.currentUser;
-
         if (user == null) {
           timer.cancel();
           return;
         }
 
-        // 🔥 FORCE REFRESH REAL
         await user.reload();
-
         final updatedUser = FirebaseAuth.instance.currentUser;
-
         if (updatedUser == null) return;
 
-        print("EMAIL VERIFIED CHECK: ${updatedUser.emailVerified}");
+        debugPrint("EMAIL VERIFIED CHECK: ${updatedUser.emailVerified}");
 
         if (updatedUser.emailVerified) {
           timer.cancel();
-
-          // 🔥 IMPORTANT: refresh token BEFORE backend login
-          final success = await authProvider.checkEmailVerified();
-
-          if (!mounted) return;
-
-          if (success) {
-            Navigator.pushReplacementNamed(context, AppRouter.dashboard);
-          }
+          await _doLogin();
         }
       } catch (e) {
         debugPrint("VERIFY ERROR: $e");
       }
     });
+  }
+
+  Future<void> _doLogin() async {
+    if (!mounted) return;
+    setState(() => _isChecking = true);
+
+    final authProvider = context.read<auth_provider.AuthProvider>();
+    final success = await authProvider.checkEmailVerified();
+
+    if (!mounted) return;
+    setState(() => _isChecking = false);
+
+    if (success) {
+      Navigator.pushReplacementNamed(context, AppRouter.dashboard);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal terhubung ke server. Coba lagi.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      // Restart polling agar bisa mencoba lagi
+      _startPolling();
+    }
   }
 
   // ================= RESEND EMAIL =================
@@ -150,20 +162,37 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
 
               const SizedBox(height: 32),
 
-              const Row(
+              Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                  SizedBox(width: 12),
-                  Text('Menunggu verifikasi email...'),
+                  if (_isChecking)
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  const SizedBox(width: 12),
+                  Text(_isChecking
+                      ? 'Memproses login...'
+                      : 'Menunggu verifikasi email...'),
                 ],
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
+
+              CustomButton(
+                label: _isChecking ? 'Memproses...' : 'Sudah Verifikasi?',
+                variant: ButtonVariant.primary,
+                onPressed: _isChecking ? null : _doLogin,
+              ),
+
+              const SizedBox(height: 16),
 
               CustomButton(
                 label: _resendCooldown

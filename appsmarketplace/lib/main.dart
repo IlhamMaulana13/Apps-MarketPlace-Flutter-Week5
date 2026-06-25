@@ -6,12 +6,16 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'core/services/auth_provider.dart' as auth_provider;
+import 'core/services/global_institute_pay_service.dart';
 import 'app.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Inisialisasi listener deep link e-money sebelum app dijalankan
+  await GlobalInstitutePayService().init();
 
   runApp(
     MultiProvider(

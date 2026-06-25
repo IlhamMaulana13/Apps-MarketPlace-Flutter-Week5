@@ -26,7 +26,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="pasarmalam" android:host="payment-callback" />
+                <data android:scheme="appsmarketplace" android:host="payment-callback" />
             </intent-filter>
             </activity>
 
@@ -43,7 +43,7 @@
 
         <intent>
             <action android:name="android.intent.action.VIEW" />
-            <data android:scheme="e-money" />
+            <data android:scheme="dompetkampus" />
         </intent>
         </queries>
 </manifest>

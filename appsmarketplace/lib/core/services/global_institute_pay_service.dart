@@ -56,7 +56,7 @@ class GlobalInstitutePayService {
   // 4. Memproses Link Balasan (Callback)
   void _handleUri(Uri uri, {bool isColdStart = false}) {
     // Pastikan skema dan host sesuai dengan konfigurasi Android/iOS toko Anda
-    if (uri.scheme == 'pasarmalam' && uri.host == 'payment-callback') {
+    if (uri.scheme == 'appsmarketplace' && uri.host == 'payment-callback') {
       final data = PaymentCallbackData(
         status: uri.queryParameters['status'] ?? 'unknown',
         reference: uri.queryParameters['reference'],
@@ -89,7 +89,7 @@ class GlobalInstitutePayService {
             ? description
             : 'Order #$orderId',
         'reference': 'INV-$orderId',
-        'callback': 'pasarmalam://payment-callback', // Alamat balasan toko kita
+        'callback': 'appsmarketplace://payment-callback', // Alamat balasan toko kita
       },
     );
     return uri.toString();
