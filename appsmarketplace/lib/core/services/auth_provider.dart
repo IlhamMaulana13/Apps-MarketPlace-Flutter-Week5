@@ -30,17 +30,13 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoading => _status == AuthStatus.loading;
 
   AuthProvider() {
-    _auth.authStateChanges().listen((user) async {
+    // Hanya tangani sign-out (user jadi null), jangan auto-authenticate
+    _auth.authStateChanges().listen((user) {
       _firebaseUser = user;
-
       if (user == null) {
         _status = AuthStatus.unauthenticated;
-      } else {
-        _status = AuthStatus.authenticated;
-        await user.getIdToken(true);
+        notifyListeners();
       }
-
-      notifyListeners();
     });
   }
 
@@ -182,8 +178,11 @@ class AuthProvider extends ChangeNotifier {
       await user.updateDisplayName(name);
       await user.sendEmailVerification();
 
-      _firebaseUser = user;
-      _status = AuthStatus.emailNotVerified;
+      // Sign out agar tidak ada sesi aktif — user wajib login manual
+      await _auth.signOut();
+
+      _firebaseUser = null;
+      _status = AuthStatus.unauthenticated;
       notifyListeners();
 
       return true;

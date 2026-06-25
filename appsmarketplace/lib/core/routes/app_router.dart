@@ -1,4 +1,5 @@
 import 'package:appsmarketplace/core/services/auth_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -67,9 +68,11 @@ class _SplashPageState extends State<SplashPage> {
     await Future.delayed(const Duration(seconds: 2)); // Animasi splash
     if (!mounted) return;
 
-    final token = await SecureStorage.getToken();
-    final route = token != null ? AppRouter.dashboard : AppRouter.login;
-    Navigator.pushReplacementNamed(context, route);
+    // Hapus semua sesi sebelumnya — user wajib login manual setiap buka app
+    await SecureStorage.deleteToken();
+    await FirebaseAuth.instance.signOut();
+
+    Navigator.pushReplacementNamed(context, AppRouter.login);
   }
 
   @override

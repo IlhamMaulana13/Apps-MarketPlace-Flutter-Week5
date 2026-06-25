@@ -7,10 +7,8 @@ import '../widgets/auth_header.dart';
 import '../widgets/loading_overlay.dart';
 import '../widgets/custom_button.dart';
 
-// TODO: Define AppRouter or import from routing configuration
 class AppRouter {
   static const String login = '/login';
-  static const String verifyEmail = '/verify-email';
 }
 
 class RegisterPage extends StatefulWidget {
@@ -48,8 +46,16 @@ class _RegisterPageState extends State<RegisterPage> {
 
     if (!mounted) return;
     if (success) {
-      // Navigasi ke halaman instruksi verifikasi email
-      Navigator.pushReplacementNamed(context, AppRouter.verifyEmail);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Registrasi berhasil! Cek email kamu untuk verifikasi, lalu login.',
+          ),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 4),
+        ),
+      );
+      Navigator.pushReplacementNamed(context, AppRouter.login);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

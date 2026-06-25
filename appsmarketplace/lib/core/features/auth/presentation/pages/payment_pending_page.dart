@@ -1,9 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-// PENTING: Pastikan path import ini sesuai dengan letak file service Anda
-// Jika nama folderned berbeda, silakan disesuaikan
 import 'package:appsmarketplace/core/services/global_institute_pay_service.dart';
 
 class PaymentPendingPage extends StatefulWidget {
@@ -12,7 +9,7 @@ class PaymentPendingPage extends StatefulWidget {
   final String paymentMethod;
 
   const PaymentPendingPage({
-    super.key, 
+    super.key,
     required this.orderId,
     required this.totalAmount,
     required this.paymentMethod,
@@ -22,9 +19,10 @@ class PaymentPendingPage extends StatefulWidget {
   State<PaymentPendingPage> createState() => _PaymentPendingPageState();
 }
 
-class _PaymentPendingPageState extends State<PaymentPendingPage> with WidgetsBindingObserver {
+class _PaymentPendingPageState extends State<PaymentPendingPage>
+    with WidgetsBindingObserver {
   bool _payLaunched = false;
-  StreamSubscription<PaymentCallbackData>? _callbackSub; 
+  StreamSubscription<PaymentCallbackData>? _callbackSub;
 
   @override
   void initState() {
@@ -34,7 +32,9 @@ class _PaymentPendingPageState extends State<PaymentPendingPage> with WidgetsBin
 
     // Otomatis buka aplikasi e-money sesaat setelah halaman dirender
     if (widget.paymentMethod == 'global_institute_pay') {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _launchGlobalInstitutePay());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _launchGlobalInstitutePay(),
+      );
     }
 
     // Tangani callback jika aplikasi Toko Jersey sempat tertutup (Cold Start)
@@ -47,7 +47,7 @@ class _PaymentPendingPageState extends State<PaymentPendingPage> with WidgetsBin
     _callbackSub = GlobalInstitutePayService().onCallback.listen((data) {
       if (!mounted) return;
       if (data.isSuccess) {
-        _onPaymentSuccess(); 
+        _onPaymentSuccess();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -71,11 +71,32 @@ class _PaymentPendingPageState extends State<PaymentPendingPage> with WidgetsBin
   Future<void> _launchGlobalInstitutePay() async {
     final deeplinkUrl = GlobalInstitutePayService.buildDeeplinkUrl(
       orderId: widget.orderId,
-      amount: widget.totalAmount, 
+      amount: widget.totalAmount,
       description: "Pembelian Jersey",
     );
-    
+
     final uri = Uri.parse(deeplinkUrl);
+
+    // Di dalam fungsi _launchGlobalInstitutePay
+    if (!await canLaunchUrl(uri)) {
+      // Tambahkan dialog jika E-Money belum terinstall
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text("Aplikasi E-Money tidak ditemukan"),
+          content: const Text(
+            "Silakan install Dompet Kampus untuk melanjutkan pembayaran.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("OK"),
+            ),
+          ],
+        ),
+      );
+    }
 
     // Coba buka aplikasi E-Money (dompetkampus://)
     try {
@@ -86,7 +107,9 @@ class _PaymentPendingPageState extends State<PaymentPendingPage> with WidgetsBin
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Gagal membuka E-Money. Pastikan aplikasi Dompet Kampus sudah terinstall.'),
+          content: Text(
+            'Gagal membuka E-Money. Pastikan aplikasi Dompet Kampus sudah terinstall.',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -97,14 +120,14 @@ class _PaymentPendingPageState extends State<PaymentPendingPage> with WidgetsBin
   void _onPaymentSuccess() {
     // Anda bisa mengganti ini dengan navigasi ke halaman "Pesanan Berhasil"
     // Contoh: Navigator.pushReplacementNamed(context, '/order-success');
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Hore! Pembayaran Berhasil! 🎉'),
         backgroundColor: Colors.green,
       ),
     );
-    
+
     // Kembali ke beranda setelah sukses
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
@@ -131,11 +154,14 @@ class _PaymentPendingPageState extends State<PaymentPendingPage> with WidgetsBin
               ),
               const SizedBox(height: 32),
               Text(
-                _payLaunched 
-                  ? 'Selesaikan pembayaran di\nAplikasi E-Money Anda...' 
-                  : 'Membuka E-Money...',
+                _payLaunched
+                    ? 'Selesaikan pembayaran di\nAplikasi E-Money Anda...'
+                    : 'Membuka E-Money...',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               const SizedBox(height: 16),
               const Text(
@@ -149,9 +175,12 @@ class _PaymentPendingPageState extends State<PaymentPendingPage> with WidgetsBin
                 icon: const Icon(Icons.open_in_new),
                 label: const Text('Buka Ulang Aplikasi E-Money'),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
                 ),
-              )
+              ),
             ],
           ),
         ),
