@@ -8,7 +8,7 @@
 
 | Field | Detail |
 |-------|--------|
-| Nama | MHAMMAD ILHAM MAULANA |
+| Nama | MUHAMMAD ILHAM MAULANA |
 | NIM | 1123150141 |
 | Kelas | TI 23 SH SE |
 | Mata Kuliah | Aplikasi Mobile Lanjutan — Semester 6 |
@@ -238,26 +238,21 @@ flutter build apk --release
 
 | Login | Register |
 |-------|----------|
-| *(screenshot)* | *(screenshot)* |
+| *<img src="appsmarketplace/assets/screenshots/login.jpg" alt="Login" width="200"/>* | *<img src="appsmarketplace/assets/screenshots/regis.jpg" alt="REgister" width="200"/>* |
 
 ### Katalog Produk & Keranjang
 > Daftar produk dari backend, dapat ditambahkan ke keranjang dengan pilihan ukuran.
 
 | Dashboard Produk | Keranjang Belanja |
 |-----------------|-------------------|
-| *(screenshot)* | *(screenshot)* |
+| *<img src="appsmarketplace/assets/screenshots/home.jpg" alt="home" width="200"/>* | *<img src="appsmarketplace/assets/screenshots/cart.jpg" alt="CART" width="200"/>* |
 
 ### Alur Pembayaran
 > Checkout → E-Money (Dompet Kampus) → Konfirmasi PIN → Kembali ke Toko.
 
-| Checkout | Menunggu Bayar | Status Transaksi |
+| Checkout | Menunggu Bayar | Status Transaksi & Notifikasi|
 |----------|---------------|-----------------|
-| *(screenshot)* | *(screenshot)* | *(screenshot)* |
-
-> **Cara menambahkan screenshot:**
-> 1. Jalankan aplikasi di perangkat
-> 2. Ambil screenshot: `adb exec-out screencap -p > screenshot.png`
-> 3. Letakkan file di folder `screenshots/` lalu referensikan di atas
+| *<img src="appsmarketplace/assets/screenshots/checkout.jpg" alt="Checkout" width="200"/>* | *<img src="appsmarketplace/assets/screenshots/wait.jpg" alt="Wait" width="200"/>* | *<img src="appsmarketplace/assets/screenshots/notif-status.jpg" alt="notif-status" width="200"/>* |
 
 ---
 
@@ -296,4 +291,4 @@ static const String baseUrl = 'http://192.168.x.x:8080/v1';
 
 ---
 
-*Dibuat untuk tugas UTS Pemrograman Aplikasi Mobile Semester 6 — Universitas Teknologi Sumbawa*
+*Institut Teknologi & Bisnis Bina Sarana Global*
