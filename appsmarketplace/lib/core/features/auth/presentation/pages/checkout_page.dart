@@ -23,36 +23,44 @@ class _CheckoutPageState extends State<CheckoutPage> {
         );
   }
 
+  // Hitung total dari items secara lokal agar subtotal = total
+  double _calcTotal(List items) {
+    return items.fold(0.0, (sum, item) {
+      final price = (item['product']['price'] as num).toDouble();
+      final qty = (item['quantity'] as num).toInt();
+      return sum + price * qty;
+    });
+  }
+
   Future<void> _processPayment() async {
     if (!mounted) return;
     setState(() => isProcessing = true);
 
+    final cart = context.read<CartProvider>();
+
     if (selectedPaymentMethod == 'cod') {
-      await _showCodSuccessDialog();
+      await _showCodSuccessDialog(_calcTotal(cart.items));
       if (!mounted) return;
       setState(() => isProcessing = false);
       return;
     }
 
-    final cart = context.read<CartProvider>();
     final orderId = DateTime.now().millisecondsSinceEpoch;
+    final total = _calcTotal(cart.items);
 
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) => PaymentPendingPage(
           orderId: orderId,
-          totalAmount: cart.totalPrice.toDouble(),
+          totalAmount: total,
           paymentMethod: selectedPaymentMethod,
         ),
       ),
     );
   }
 
-  Future<void> _showCodSuccessDialog() async {
-    final cart = context.read<CartProvider>();
-    final total = formatPrice(cart.totalPrice);
-
+  Future<void> _showCodSuccessDialog(double total) async {
     await showDialog(
       context: context,
       barrierDismissible: false,
@@ -78,7 +86,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Rp $total',
+              'Rp ${formatPrice(total)}',
               style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -104,7 +112,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ),
                 onPressed: () {
                   Navigator.pop(ctx);
-                  Navigator.popUntil(context, (route) => route.isFirst);
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/dashboard',
+                    (route) => false,
+                  );
                 },
                 child: const Text(
                   'Kembali ke Beranda',
@@ -120,8 +132,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Membaca data keranjang
     final cart = context.watch<CartProvider>();
+    final subtotal = _calcTotal(cart.items);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -134,14 +146,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- BAGIAN 1: RINGKASAN PESANAN ---
+                  // --- DETAIL PESANAN ---
                   const Text(
-                    "Ringkasan Pesanan",
+                    "Detail Pesanan",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
@@ -154,28 +165,80 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       ],
                     ),
                     child: Column(
-                      children: cart.items.map((item) {
+                      children: cart.items.asMap().entries.map((entry) {
+                        final i = entry.key;
+                        final item = entry.value;
                         final product = item['product'];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  "${item['quantity']}x ${product['name']}",
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                        final price = (product['price'] as num).toDouble();
+                        final qty = (item['quantity'] as num).toInt();
+                        final size = item['size'] ?? 'M';
+                        final imageUrl = product['image_url'] as String? ?? '';
+                        final isLast = i == cart.items.length - 1;
+
+                        return Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Thumbnail
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: imageUrl.isNotEmpty
+                                        ? Image.network(
+                                            imageUrl,
+                                            width: 64,
+                                            height: 64,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) =>
+                                                _imagePlaceholder(),
+                                          )
+                                        : _imagePlaceholder(),
+                                  ),
+                                  const SizedBox(width: 12),
+
+                                  // Info produk
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          product['name'] as String,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Ukuran: $size  ·  Qty: $qty',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  // Harga
+                                  Text(
+                                    'Rp ${formatPrice(price * qty)}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                "Rp ${formatPrice(product['price'] * item['quantity'])}",
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                            if (!isLast)
+                              const Divider(height: 1, indent: 12, endIndent: 12),
+                          ],
                         );
                       }).toList(),
                     ),
@@ -183,7 +246,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
                   const SizedBox(height: 24),
 
-                  // --- BAGIAN 2: METODE PEMBAYARAN ---
+                  // --- METODE PEMBAYARAN ---
                   const Text(
                     "Metode Pembayaran",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -203,15 +266,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     ),
                     child: Column(
                       children: [
-                        // Opsi E-Money (Global Institute Pay)
                         RadioListTile<String>(
                           title: const Text(
                             "Global Institute Pay",
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           subtitle: const Text(
-                            "Bayar otomatis via aplikasi E-Money",
-                          ),
+                              "Bayar otomatis via aplikasi E-Money"),
                           secondary: const Icon(
                             Icons.account_balance_wallet,
                             color: Colors.blue,
@@ -220,9 +281,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           groupValue: selectedPaymentMethod,
                           onChanged: (value) {
                             if (!mounted) return;
-                            setState(() {
-                              selectedPaymentMethod = value!;
-                            });
+                            setState(() => selectedPaymentMethod = value!);
                           },
                         ),
                         const Divider(height: 1),
@@ -240,9 +299,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           groupValue: selectedPaymentMethod,
                           onChanged: (value) {
                             if (!mounted) return;
-                            setState(() {
-                              selectedPaymentMethod = value!;
-                            });
+                            setState(() => selectedPaymentMethod = value!);
                           },
                         ),
                       ],
@@ -253,9 +310,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ),
           ),
 
-          // --- BAGIAN 3: TOTAL & TOMBOL BAYAR ---
+          // --- RINGKASAN HARGA & TOMBOL BAYAR ---
           Container(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: const BorderRadius.vertical(
@@ -272,15 +329,35 @@ class _CheckoutPageState extends State<CheckoutPage> {
             child: SafeArea(
               child: Column(
                 children: [
+                  // Subtotal
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Subtotal (${cart.items.length} produk)",
+                        style: const TextStyle(
+                            fontSize: 14, color: Colors.grey),
+                      ),
+                      Text(
+                        "Rp ${formatPrice(subtotal)}",
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  const Divider(),
+                  const SizedBox(height: 6),
+                  // Total
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
                         "Total Tagihan",
-                        style: TextStyle(fontSize: 16),
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        "Rp ${formatPrice(cart.totalPrice)}",
+                        "Rp ${formatPrice(subtotal)}",
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 20,
@@ -289,7 +366,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   SizedBox(
                     width: double.infinity,
                     height: 52,
@@ -326,6 +403,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _imagePlaceholder() {
+    return Container(
+      width: 64,
+      height: 64,
+      color: Colors.grey.shade100,
+      child: Icon(Icons.checkroom_outlined,
+          size: 30, color: Colors.grey.shade400),
     );
   }
 }

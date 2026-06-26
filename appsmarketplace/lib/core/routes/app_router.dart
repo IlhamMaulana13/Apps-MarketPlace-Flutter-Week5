@@ -8,8 +8,12 @@ import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/Register_page.dart';
 import '../features/auth/presentation/pages/Verify_email_page.dart';
 import '../features/auth/presentation/pages/dashboard_page.dart';
+import '../features/auth/presentation/pages/transaction_success_page.dart';
 
 import '../services/secure_storage.dart';
+import '../services/global_institute_pay_service.dart';
+import '../services/notification_service.dart';
+import '../features/cart/presentation/providers/cart_provider.dart';
 
 class AppRouter {
   static const String splash = '/';
@@ -65,13 +69,39 @@ class _SplashPageState extends State<SplashPage> {
   }
 
   Future<void> _checkAuth() async {
-    await Future.delayed(const Duration(seconds: 2)); // Animasi splash
+    await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
 
-    // Hapus semua sesi sebelumnya — user wajib login manual setiap buka app
+    // Cold start via deeplink: user baru saja bayar di E-Money
+    // Jangan logout — langsung tampilkan status transaksi
+    final pending = GlobalInstitutePayService().consumePendingCallback();
+    if (pending != null && pending.isSuccess) {
+      // Kosongkan keranjang dan kirim notifikasi
+      context.read<CartProvider>().clearLocal();
+      await NotificationService().showPaymentSuccess(
+        amount: pending.amount ?? 0,
+        reference: pending.reference,
+        transactionId: pending.transactionId,
+      );
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => TransactionSuccessPage(
+            amount: pending.amount ?? 0,
+            reference: pending.reference,
+            transactionId: pending.transactionId,
+            paymentMethod: 'Global Institute Pay',
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Normal flow — user wajib login manual setiap buka app
     await SecureStorage.deleteToken();
     await FirebaseAuth.instance.signOut();
-
+    if (!mounted) return;
     Navigator.pushReplacementNamed(context, AppRouter.login);
   }
 

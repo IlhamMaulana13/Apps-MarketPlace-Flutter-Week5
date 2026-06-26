@@ -71,10 +71,18 @@ class _PaymentPendingPageState extends State<PaymentPendingPage>
   }
 
   Future<void> _launchGlobalInstitutePay() async {
+    // Bangun deskripsi dari nama produk nyata di keranjang
+    final cart = context.read<CartProvider>();
+    final description = cart.items.isNotEmpty
+        ? cart.items
+            .map((i) => '${i['quantity']}x ${i['product']['name']}')
+            .join(', ')
+        : 'Pembelian Jersey';
+
     final deeplinkUrl = GlobalInstitutePayService.buildDeeplinkUrl(
       orderId: widget.orderId,
       amount: widget.totalAmount,
-      description: 'Pembelian Jersey',
+      description: description,
     );
 
     final uri = Uri.parse(deeplinkUrl);
