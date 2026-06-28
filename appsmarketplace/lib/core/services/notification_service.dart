@@ -23,6 +23,23 @@ class NotificationService {
         ?.requestNotificationsPermission();
   }
 
+  Future<void> showNotification({
+    required String title,
+    required String body,
+    int id = 1,
+  }) async {
+    const details = AndroidNotificationDetails(
+      _channelId,
+      _channelName,
+      channelDescription: 'Notifikasi status pembayaran',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      enableVibration: true,
+    );
+    await _plugin.show(id, title, body, const NotificationDetails(android: details));
+  }
+
   Future<void> showPaymentSuccess({
     required double amount,
     String? reference,

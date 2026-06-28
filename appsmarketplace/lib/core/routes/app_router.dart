@@ -1,5 +1,4 @@
 import 'package:appsmarketplace/core/services/auth_provider.dart';
-import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -10,7 +9,6 @@ import '../features/auth/presentation/pages/Verify_email_page.dart';
 import '../features/auth/presentation/pages/dashboard_page.dart';
 import '../features/auth/presentation/pages/transaction_success_page.dart';
 
-import '../services/secure_storage.dart';
 import '../services/global_institute_pay_service.dart';
 import '../services/notification_service.dart';
 import '../features/cart/presentation/providers/cart_provider.dart';
@@ -72,12 +70,16 @@ class _SplashPageState extends State<SplashPage> {
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
 
+    final authProvider = context.read<AuthProvider>();
+    final cartProvider = context.read<CartProvider>();
+
     // Cold start via deeplink: user baru saja bayar di E-Money
-    // Jangan logout — langsung tampilkan status transaksi
     final pending = GlobalInstitutePayService().consumePendingCallback();
     if (pending != null && pending.isSuccess) {
-      // Kosongkan keranjang dan kirim notifikasi
-      context.read<CartProvider>().clearLocal();
+      // Pulihkan sesi agar tombol "Kembali ke Beranda" bisa masuk ke dashboard
+      await authProvider.tryRestoreSession();
+
+      cartProvider.clearLocal();
       await NotificationService().showPaymentSuccess(
         amount: pending.amount ?? 0,
         reference: pending.reference,
@@ -91,18 +93,22 @@ class _SplashPageState extends State<SplashPage> {
             amount: pending.amount ?? 0,
             reference: pending.reference,
             transactionId: pending.transactionId,
-            paymentMethod: 'Global Institute Pay',
+            paymentMethod: "Dompet Syari'ah",
           ),
         ),
       );
       return;
     }
 
-    // Normal flow — user wajib login manual setiap buka app
-    await SecureStorage.deleteToken();
-    await FirebaseAuth.instance.signOut();
+    // Coba pulihkan sesi dari token tersimpan (tanpa panggil backend)
+    final restored = await authProvider.tryRestoreSession();
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, AppRouter.login);
+
+    if (restored) {
+      Navigator.pushReplacementNamed(context, AppRouter.dashboard);
+    } else {
+      Navigator.pushReplacementNamed(context, AppRouter.login);
+    }
   }
 
   @override

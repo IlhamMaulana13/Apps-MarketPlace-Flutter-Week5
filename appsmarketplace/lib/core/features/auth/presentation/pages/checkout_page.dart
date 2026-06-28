@@ -268,11 +268,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       children: [
                         RadioListTile<String>(
                           title: const Text(
-                            "Global Institute Pay",
+                            "Dompet Syari'ah",
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           subtitle: const Text(
-                              "Bayar otomatis via aplikasi E-Money"),
+                              "Bayar otomatis via aplikasi Dompet Syari'ah"),
                           secondary: const Icon(
                             Icons.account_balance_wallet,
                             color: Colors.blue,

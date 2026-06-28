@@ -69,7 +69,7 @@ class GlobalInstitutePayService {
   }
 
   // Bangun deeplink ke e-money:
-  // dompetkampus://pay?merchant_id=X&merchant_name=Y&amount=Z
+  // dompetsyariah://pay?merchant_id=X&merchant_name=Y&amount=Z
   //   &description=D&reference=R&callback=appsmarketplace://payment-result
   static String buildDeeplinkUrl({
     required int orderId,
@@ -77,7 +77,7 @@ class GlobalInstitutePayService {
     String? description,
   }) {
     final uri = Uri(
-      scheme: 'dompetkampus',
+      scheme: 'dompetsyariah',
       host: 'pay',
       queryParameters: {
         'merchant_id': 'JERSEY_STORE_01',

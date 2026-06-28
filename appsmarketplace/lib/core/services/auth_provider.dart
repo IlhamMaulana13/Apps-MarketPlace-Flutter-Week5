@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:appsmarketplace/core/services/dio_client.dart';
+import 'package:appsmarketplace/core/services/fcm_service.dart';
 import 'package:appsmarketplace/core/services/secure_storage.dart';
 
 enum AuthStatus {
@@ -235,6 +236,9 @@ class AuthProvider extends ChangeNotifier {
 
       print("LOGIN SUCCESS ✅");
 
+      // Upload FCM token ke backend (non-blocking)
+      FcmService().uploadToken();
+
       return true;
     } catch (e) {
       print("VERIFY ERROR ❌ $e");
@@ -257,6 +261,25 @@ class AuthProvider extends ChangeNotifier {
       return await _verifyTokenToBackend();
     } catch (e) {
       print("CHECK VERIFY ERROR: $e");
+      return false;
+    }
+  }
+
+  // ================= RESTORE SESSION =================
+  /// Pulihkan sesi dengan re-verify ke backend untuk mendapatkan token segar.
+  Future<bool> tryRestoreSession() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return false;
+
+      // Pastikan email sudah terverifikasi
+      await user.reload();
+      if (!user.emailVerified) return false;
+
+      // Re-verify ke backend agar dapat token baru yang valid
+      final success = await _verifyTokenToBackend();
+      return success;
+    } catch (_) {
       return false;
     }
   }

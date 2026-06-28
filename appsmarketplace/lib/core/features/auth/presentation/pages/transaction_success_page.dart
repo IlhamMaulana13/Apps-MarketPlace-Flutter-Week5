@@ -12,7 +12,7 @@ class TransactionSuccessPage extends StatelessWidget {
     required this.amount,
     this.reference,
     this.transactionId,
-    this.paymentMethod = 'Global Institute Pay',
+    this.paymentMethod = "Dompet Syari'ah",
   });
 
   String _formatRupiah(double val) {

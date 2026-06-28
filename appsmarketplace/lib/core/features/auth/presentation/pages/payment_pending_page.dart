@@ -109,7 +109,7 @@ class _PaymentPendingPageState extends State<PaymentPendingPage>
       builder: (ctx) => AlertDialog(
         title: const Text('Aplikasi E-Money tidak ditemukan'),
         content: const Text(
-          'Aplikasi Dompet Kampus belum terinstall di perangkat Anda. '
+'Aplikasi Dompet Syari\'ah belum terinstall di perangkat Anda. '
           'Silakan install terlebih dahulu untuk melanjutkan pembayaran.',
         ),
         actions: [
@@ -147,7 +147,7 @@ class _PaymentPendingPageState extends State<PaymentPendingPage>
           amount: confirmedAmount,
           reference: data.reference,
           transactionId: data.transactionId,
-          paymentMethod: 'Global Institute Pay',
+          paymentMethod: "Dompet Syari'ah",
         ),
       ),
     );
@@ -172,8 +172,8 @@ class _PaymentPendingPageState extends State<PaymentPendingPage>
               const SizedBox(height: 32),
               Text(
                 _payLaunched
-                    ? 'Selesaikan pembayaran di\nAplikasi E-Money Anda...'
-                    : 'Membuka E-Money...',
+                    ? "Selesaikan pembayaran di\nDompet Syari'ah Anda..."
+                    : "Membuka Dompet Syari'ah...",
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 18,
@@ -190,7 +190,7 @@ class _PaymentPendingPageState extends State<PaymentPendingPage>
               OutlinedButton.icon(
                 onPressed: _launchGlobalInstitutePay,
                 icon: const Icon(Icons.open_in_new),
-                label: const Text('Buka Ulang Aplikasi E-Money'),
+                label: const Text("Buka Ulang Dompet Syari'ah"),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,

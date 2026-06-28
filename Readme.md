@@ -17,15 +17,15 @@
 
 ## Deskripsi Aplikasi
 
-**AppsMarketplace** adalah aplikasi mobile toko jersey berbasis Flutter yang memungkinkan pengguna untuk menelusuri produk, mengelola keranjang belanja, dan melakukan pembayaran secara digital melalui integrasi dengan aplikasi **Dompet Kampus Global (E-Money)**.
+**AppsMarketplace** adalah aplikasi mobile toko jersey berbasis Flutter yang memungkinkan pengguna untuk menelusuri produk, mengelola keranjang belanja, dan melakukan pembayaran secara digital melalui integrasi dengan aplikasi **Dompet Syar'iah (E-Money)**.
 
 ### Fitur Utama
 
 - **Autentikasi** — Login & Register menggunakan Email/Password dan Google Sign-In melalui Firebase Authentication, dengan verifikasi email wajib sebelum login
 - **Katalog Produk** — Menampilkan daftar produk jersey dari backend API dengan detail harga, ukuran, dan gambar
 - **Keranjang Belanja** — Tambah, ubah jumlah, dan hapus item dari keranjang; sinkronisasi real-time dengan backend
-- **Checkout** — Pilihan metode pembayaran: Global Institute Pay (E-Money) atau COD (bayar di tempat)
-- **Pembayaran Deep Link** — Integrasi dengan aplikasi Dompet Kampus Global menggunakan deep link `dompetkampus://pay` untuk pembayaran otomatis tanpa input manual
+- **Checkout** — Pilihan metode pembayaran: Dompet Syari'ah (E-Money) atau COD (bayar di tempat)
+- **Pembayaran Deep Link** — Integrasi dengan aplikasi Dompet Syari'ah menggunakan deep link `dompetsyariah://pay` untuk pembayaran otomatis tanpa input manual
 - **Status Transaksi** — Halaman konfirmasi transaksi dengan detail pembayaran (jumlah, referensi, ID transaksi) setelah pembayaran berhasil
 - **Notifikasi Lokal** — Notifikasi otomatis di status bar saat pembayaran dikonfirmasi oleh E-Money
 
@@ -40,8 +40,8 @@
 │              EKOSISTEM APLIKASI                     │
 │                                                     │
 │  ┌──────────────────┐      ┌────────────────────┐  │
-│  │  AppsMarketplace │      │  Dompet Kampus     │  │
-│  │  (Flutter/       │◄────►│  Global (E-Money)  │  │
+│  │  AppsMarketplace │      │  Dompet Syari'ah   │  │
+│  │  (Flutter/       │◄────►│  (E-Money/BLoC)    │  │
 │  │   Provider)      │      │  (Flutter/BLoC)    │  │
 │  └────────┬─────────┘      └────────────────────┘  │
 │           │ REST API              Deep Link          │
@@ -60,9 +60,9 @@
 ### Alur Pembayaran Deep Link
 
 ```
-AppsMarketplace                     E-Money (Dompet Kampus)
+AppsMarketplace                     E-Money (Dompet Syari'ah)
       │                                      │
-      │  dompetkampus://pay?amount=X         │
+      │  dompetsyariah://pay?amount=X         │
       │  &merchant_id=JERSEY_STORE_01        │
       │  &reference=INV-xxx                  │
       │  &callback=appsmarketplace://...     │
@@ -248,7 +248,7 @@ flutter build apk --release
 | *<img src="appsmarketplace/assets/screenshots/home.jpg" alt="home" width="200"/>* | *<img src="appsmarketplace/assets/screenshots/cart.jpg" alt="CART" width="200"/>* |
 
 ### Alur Pembayaran
-> Checkout → E-Money (Dompet Kampus) → Konfirmasi PIN → Kembali ke Toko.
+> Checkout → E-Money (Dompet Syari'ah) → Konfirmasi PIN → Kembali ke Toko.
 
 | Checkout | Menunggu Bayar | Status Transaksi & Notifikasi|
 |----------|---------------|-----------------|
