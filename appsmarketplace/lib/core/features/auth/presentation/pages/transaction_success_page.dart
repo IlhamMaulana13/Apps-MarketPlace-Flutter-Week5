@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:appsmarketplace/core/routes/app_router.dart';
+import 'package:appsmarketplace/core/features/cart/presentation/providers/cart_provider.dart';
 
 class TransactionSuccessPage extends StatelessWidget {
   final double amount;
@@ -20,6 +22,7 @@ class TransactionSuccessPage extends StatelessWidget {
   }
 
   void _goHome(BuildContext context) {
+    context.read<CartProvider>().clearLocal();
     Navigator.pushNamedAndRemoveUntil(
       context,
       AppRouter.dashboard,

@@ -51,6 +51,8 @@ class CartProvider extends ChangeNotifier {
   }
 
   Future<void> checkout() async {
+    final savedItems = List.from(items);
+
     await DioClient.instance.post(
       '/orders/checkout',
       data: {"shipping_address": "Jl. Default", "notes": "-"},
@@ -58,8 +60,16 @@ class CartProvider extends ChangeNotifier {
 
     items = [];
     totalPrice = 0;
-
     notifyListeners();
+
+    // Hapus semua item dari server cart secara paralel (agar fetchCart setelah ini tetap kosong)
+    await Future.wait(
+      savedItems.map((item) async {
+        try {
+          await DioClient.instance.delete('/cart/${item['ID']}');
+        } catch (_) {}
+      }),
+    );
   }
 
   void clearLocal() {
