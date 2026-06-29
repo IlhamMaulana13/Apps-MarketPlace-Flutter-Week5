@@ -38,15 +38,35 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
     final cart = context.read<CartProvider>();
 
+    // Simpan item sebelum cart dikosongkan
+    final savedItems = List<Map<String, dynamic>>.from(
+      cart.items.map((i) => Map<String, dynamic>.from(i as Map)),
+    );
+    final total = _calcTotal(savedItems);
+
     if (selectedPaymentMethod == 'cod') {
-      await _showCodSuccessDialog(_calcTotal(cart.items));
+      try {
+        await cart.checkout(); // buat order + kosongkan cart di server
+      } catch (_) {
+        cart.clearLocal();
+      }
+      if (!mounted) return;
+      await _showCodSuccessDialog(total);
       if (!mounted) return;
       setState(() => isProcessing = false);
       return;
     }
 
+    // Dompet Syari'ah: buat order di server dulu, lalu lanjutkan pembayaran
+    try {
+      await cart.checkout(); // buat order + kosongkan server cart
+    } catch (_) {
+      cart.clearLocal();
+    }
+
+    if (!mounted) return;
+
     final orderId = DateTime.now().millisecondsSinceEpoch;
-    final total = _calcTotal(cart.items);
 
     Navigator.pushReplacement(
       context,
@@ -55,6 +75,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           orderId: orderId,
           totalAmount: total,
           paymentMethod: selectedPaymentMethod,
+          cartItems: savedItems, // item yang sudah disimpan sebelum checkout
         ),
       ),
     );

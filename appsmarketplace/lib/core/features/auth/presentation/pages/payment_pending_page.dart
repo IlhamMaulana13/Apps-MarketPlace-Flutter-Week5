@@ -11,12 +11,14 @@ class PaymentPendingPage extends StatefulWidget {
   final int orderId;
   final double totalAmount;
   final String paymentMethod;
+  final List<Map<String, dynamic>> cartItems;
 
   const PaymentPendingPage({
     super.key,
     required this.orderId,
     required this.totalAmount,
     required this.paymentMethod,
+    this.cartItems = const [],
   });
 
   @override
@@ -71,25 +73,28 @@ class _PaymentPendingPageState extends State<PaymentPendingPage>
   }
 
   Future<void> _launchGlobalInstitutePay() async {
-    // Bangun deskripsi dari nama produk nyata di keranjang
-    final cart = context.read<CartProvider>();
-    final description = cart.items.isNotEmpty
-        ? cart.items
-            .map((i) => '${i['quantity']}x ${i['product']['name']}')
-            .join(', ')
+    // Gunakan cartItems dari constructor — sudah disimpan sebelum cart dikosongkan
+    final items = widget.cartItems;
+    final description = items.isNotEmpty
+        ? items
+              .map((i) => '${i['quantity']}x ${i['product']['name']}')
+              .join(', ')
         : 'Pembelian Jersey';
 
     final deeplinkUrl = GlobalInstitutePayService.buildDeeplinkUrl(
       orderId: widget.orderId,
       amount: widget.totalAmount,
       description: description,
+      cartItems: items,
     );
 
     final uri = Uri.parse(deeplinkUrl);
 
     try {
-      final launched =
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
       if (!mounted) return;
       if (launched) {
         setState(() => _payLaunched = true);
@@ -109,7 +114,7 @@ class _PaymentPendingPageState extends State<PaymentPendingPage>
       builder: (ctx) => AlertDialog(
         title: const Text('Aplikasi E-Money tidak ditemukan'),
         content: const Text(
-'Aplikasi Dompet Syari\'ah belum terinstall di perangkat Anda. '
+          'Aplikasi Dompet Syari\'ah belum terinstall di perangkat Anda. '
           'Silakan install terlebih dahulu untuk melanjutkan pembayaran.',
         ),
         actions: [
